@@ -1,0 +1,6 @@
+{
+  "llm": {
+    "api_key": "sk-1752fa288e994995b9340a6c2df1bd28",
+    "model": "qwen3.5-flash"
+  }
+}
