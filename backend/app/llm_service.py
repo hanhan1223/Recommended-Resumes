@@ -103,6 +103,135 @@ class LLMService:
 
         return prompt
 
+    def build_analysis_prompt(self, candidate: Dict, industry: str, rank: int, total: int) -> List[Dict]:
+        """构建综合分析提示词 - 用于自动生成候选人分析报告"""
+        basic_info = candidate.get("basic_info", {})
+        name = basic_info.get("name", candidate.get("candidate_id", "未知"))
+
+        scores = candidate.get("dimensional_scores", {})
+        weights = candidate.get("dimension_weights", {})
+        tci_score = candidate.get('tci_score', 0)
+        penalty = candidate.get('penalty_applied', False)
+
+        def fmt(val):
+            if val is None or val == 'N/A' or val == '':
+                return 'N/A'
+            try:
+                return f"{float(val):.2f}"
+            except (ValueError, TypeError):
+                return str(val)
+
+        entities = candidate.get("entities", {})
+        companies = entities.get("companies", [])
+        schools = entities.get("schools", [])
+        positions = entities.get("positions", [])
+        skills = entities.get("skills", [])
+
+        achievements = candidate.get("achievements", [])
+        work_exp = candidate.get("work_experiences", [])
+        project_exp = candidate.get("project_experiences", [])
+        edu_exp = candidate.get("education_experiences", [])
+        company_ratings = candidate.get("company_ratings", [])
+        university_ratings = candidate.get("university_ratings", [])
+        work_duration = candidate.get("work_duration_months", 0)
+
+        achievements_text = "\n".join([f"- {a.get('original_text', '')}" for a in achievements[:8] if a.get('original_text')]) or "暂无"
+
+        project_text = ""
+        for p in project_exp[:3]:
+            proj_name = p.get("name", "项目经验")
+            proj_desc = p.get("description", [])
+            if isinstance(proj_desc, list):
+                proj_desc = " | ".join(str(d) for d in proj_desc[:5])
+            project_text += f"\n- {proj_name}: {str(proj_desc)[:500]}"
+
+        work_text = ""
+        for w in work_exp[:5]:
+            period = w.get("time_period", "")
+            company = w.get("company", "")
+            position = w.get("position", "")
+            responsibilities = w.get("responsibilities", [])
+            resp_text = " | ".join(str(r) for r in responsibilities[:3])
+            work_text += f"\n- {period} {company} {position}: {resp_text[:300]}"
+
+        edu_text = ""
+        for e in edu_exp[:3]:
+            edu_text += f"\n- {e.get('time_period', '')} {e.get('school', '')} {e.get('major', '')} {e.get('degree', '')}"
+
+        company_ratings_text = "\n".join([f"- {r['company']}: {r['rating']}星 ({r.get('reason', '')})" for r in company_ratings[:5]]) or "暂无"
+        university_ratings_text = "\n".join([f"- {r['university']}: {r['rating']}星 ({r.get('reason', '')})" for r in university_ratings[:3]]) or "暂无"
+
+        context = f"""请对以下候选人进行综合分析评估，输出严格的 JSON 格式。
+
+## 候选人基本信息
+- 姓名: {name}
+- 应聘行业: {industry}
+- 综合评分(TCI): {fmt(tci_score)} / 5.00
+- 行业排名: 第{rank}名 / 共{total}人
+- 工作年限: {work_duration / 12:.1f}年
+- 跳槽风险: {'有（频繁跳槽）' if penalty else '无'}
+
+## 各维度得分（满分5.00）
+| 维度 | 得分 | 权重 |
+|------|------|------|
+| 教育背景 | {fmt(scores.get('education'))} | {fmt(weights.get('education', 0)*100)}% |
+| 工作经历 | {fmt(scores.get('experience'))} | {fmt(weights.get('experience', 0)*100)}% |
+| 技能成果 | {fmt(scores.get('skill_achievement'))} | {fmt(weights.get('skill_achievement', 0)*100)}% |
+| 综合素质 | {fmt(scores.get('comprehensive'))} | {fmt(weights.get('comprehensive', 0)*100)}% |
+
+## 教育背景
+学校评级:
+{university_ratings_text}
+教育经历:
+{edu_text or '暂无详细信息'}
+
+## 工作经历
+公司评级:
+{company_ratings_text}
+工作详情:
+{work_text or '暂无详细信息'}
+
+## 技能特长
+{', '.join(skills[:15]) if skills else '暂无'}
+
+## 任职岗位
+{', '.join(positions[:5]) if positions else '暂无'}
+
+## 工作公司
+{', '.join(companies[:5]) if companies else '暂无'}
+
+## 主要成就
+{achievements_text}
+
+## 项目经验
+{project_text or '暂无'}"""
+
+        messages = [
+            {"role": "system", "content": """你是一个专业的人才评估分析师。请根据候选人的完整简历数据和评分结果，进行综合分析。
+
+你必须严格按照以下 JSON 格式输出，不要输出任何其他内容：
+{
+  "summary": "综合评价（2-3句话，概括候选人整体情况）",
+  "strengths": ["优势1", "优势2", "优势3"],
+  "weaknesses": ["不足1", "不足2"],
+  "risks": ["风险1", "风险2"],
+  "recommendation": "录用建议（明确推荐/可以考虑/暂不推荐，附理由）",
+  "development_suggestions": ["发展建议1", "发展建议2"]
+}
+
+要求：
+1. 所有分析必须基于提供的实际数据，禁止编造
+2. strengths 侧重于候选人的核心竞争力和亮点
+3. weaknesses 指出候选人需要改进或注意的地方
+4. risks 分析潜在的用人风险（稳定性、能力匹配等）
+5. recommendation 给出明确的录用建议和理由
+6. development_suggestions 给出候选人职业发展建议
+7. 使用中文回答，语言专业客观"""},
+            {"role": "user", "content": context}
+        ]
+
+        return messages
+
     def build_qa_prompt(self, question: str, candidate: Dict, industry: str, all_candidates: List[Dict] = None) -> List[Dict]:
         """构建问答提示词"""
         basic_info = candidate.get("basic_info", {})

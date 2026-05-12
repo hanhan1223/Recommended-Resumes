@@ -82,32 +82,87 @@
         </el-col>
       </el-row>
 
-      <!-- 分析总结 -->
+      <!-- AI智能分析 -->
       <el-card class="analysis-card mt-20">
         <template #header>
-          <span>💡 智能分析</span>
+          <div class="analysis-header">
+            <span>🤖 AI 智能分析</span>
+            <el-tag v-if="analysisData" :type="analysisData.source === 'llm' ? 'success' : 'info'" size="small">
+              {{ analysisData.source === 'llm' ? 'AI Powered' : '规则分析' }}
+            </el-tag>
+          </div>
         </template>
-        <el-row :gutter="30">
-          <el-col :span="12">
-            <div class="analysis-section">
-              <h4>✨ 优势亮点</h4>
-              <ul>
-                <li v-for="(adv, i) in advantages" :key="i">{{ adv }}</li>
-              </ul>
-            </div>
-          </el-col>
-          <el-col :span="12">
-            <div class="analysis-section">
-              <h4>⚠️ 风险提示</h4>
-              <ul>
-                <li v-for="(risk, i) in risks" :key="i">{{ risk }}</li>
-              </ul>
-            </div>
-          </el-col>
-        </el-row>
-        <div class="recommendation mt-20">
-          <h4>🎯 综合推荐</h4>
-          <p>{{ recommendation }}</p>
+
+        <div v-if="analysisLoading" class="analysis-loading">
+          <el-skeleton :rows="6" animated />
+          <p class="loading-tip">AI 正在分析候选人简历数据...</p>
+        </div>
+
+        <div v-else-if="analysisData" class="analysis-content">
+          <!-- 综合评价 -->
+          <div class="analysis-summary">
+            <h4>📋 综合评价</h4>
+            <p>{{ analysisData.summary }}</p>
+          </div>
+
+          <el-row :gutter="20" class="mt-16">
+            <!-- 优势 -->
+            <el-col :span="8">
+              <div class="analysis-section strengths-section">
+                <h4>✨ 优势亮点</h4>
+                <div class="tag-list">
+                  <el-tag v-for="(s, i) in analysisData.strengths" :key="i" type="success" effect="plain" class="analysis-tag">
+                    {{ s }}
+                  </el-tag>
+                  <span v-if="!analysisData.strengths?.length" class="empty-text">暂无</span>
+                </div>
+              </div>
+            </el-col>
+
+            <!-- 不足 -->
+            <el-col :span="8">
+              <div class="analysis-section weaknesses-section">
+                <h4>⚡ 待改进</h4>
+                <div class="tag-list">
+                  <el-tag v-for="(w, i) in analysisData.weaknesses" :key="i" type="warning" effect="plain" class="analysis-tag">
+                    {{ w }}
+                  </el-tag>
+                  <span v-if="!analysisData.weaknesses?.length" class="empty-text">暂无</span>
+                </div>
+              </div>
+            </el-col>
+
+            <!-- 风险 -->
+            <el-col :span="8">
+              <div class="analysis-section risks-section">
+                <h4>⚠️ 风险提示</h4>
+                <div class="tag-list">
+                  <el-tag v-for="(r, i) in analysisData.risks" :key="i" type="danger" effect="plain" class="analysis-tag">
+                    {{ r }}
+                  </el-tag>
+                  <span v-if="!analysisData.risks?.length" class="empty-text">暂无风险</span>
+                </div>
+              </div>
+            </el-col>
+          </el-row>
+
+          <!-- 录用建议 -->
+          <div class="recommendation-box mt-16">
+            <h4>🎯 录用建议</h4>
+            <p>{{ analysisData.recommendation }}</p>
+          </div>
+
+          <!-- 发展建议 -->
+          <div v-if="analysisData.development_suggestions?.length" class="development-box mt-16">
+            <h4>📈 发展建议</h4>
+            <ul>
+              <li v-for="(s, i) in analysisData.development_suggestions" :key="i">{{ s }}</li>
+            </ul>
+          </div>
+        </div>
+
+        <div v-else class="analysis-empty">
+          <el-empty description="暂无分析数据" />
         </div>
       </el-card>
     </div>
@@ -131,6 +186,8 @@ const store = useResumeStore()
 
 const candidate = ref(null)
 const rank = ref(0)
+const analysisData = ref(null)
+const analysisLoading = ref(false)
 
 const dimensionNames = {
   education: '教育背景',
@@ -190,52 +247,6 @@ const pieOption = computed(() => ({
   }]
 }))
 
-const advantages = computed(() => {
-  if (!candidate.value) return []
-  const scores = candidate.value.dimensional_scores
-  const advs = []
-  
-  if (scores.education >= 4) advs.push('教育背景优秀，毕业于知名院校')
-  if (scores.experience >= 4) advs.push('工作经历丰富，曾在知名企业任职')
-  if (scores.skill_achievement >= 4) advs.push('专业技能突出，有显著成果')
-  if (scores.comprehensive >= 4) advs.push('综合素质优秀，软实力突出')
-  
-  if (advs.length === 0) advs.push('各项指标均衡，综合表现稳定')
-  return advs
-})
-
-const risks = computed(() => {
-  if (!candidate.value) return []
-  const rks = []
-  
-  if (candidate.value.penalty_applied) {
-    rks.push('5年内跳槽次数超过3次，稳定性存在风险')
-  }
-  
-  const scores = candidate.value.dimensional_scores
-  if (scores.education < 3) rks.push('教育背景相对薄弱')
-  if (scores.experience < 3) rks.push('工作经历相对不足')
-  if (scores.skill_achievement < 3) rks.push('专业技能有待提升')
-  
-  if (rks.length === 0) rks.push('暂无显著风险')
-  return rks
-})
-
-const recommendation = computed(() => {
-  if (!candidate.value) return ''
-  
-  const tci = candidate.value.tci_score
-  if (tci >= 4) {
-    return '⭐⭐⭐⭐⭐ 强烈推荐！该候选人综合评分优秀，各项指标均衡发展，建议优先录用。'
-  } else if (tci >= 3.5) {
-    return '⭐⭐⭐⭐ 推荐。该候选人综合评分良好，符合岗位要求，建议录用。'
-  } else if (tci >= 3) {
-    return '⭐⭐⭐ 可考虑。该候选人综合评分中等，部分指标有提升空间，建议进一步面试评估。'
-  } else {
-    return '⭐⭐ 不推荐。该候选人综合评分较低，可能不符合岗位要求，建议谨慎考虑。'
-  }
-})
-
 const getScoreColor = (score) => {
   if (score >= 4) return '#67C23A'
   if (score >= 3) return '#E6A23C'
@@ -263,17 +274,33 @@ const handleExportPDF = async () => {
 
 onMounted(async () => {
   const candidateId = route.params.id
-  
+
   // 从store中查找候选人
   if (store.candidates.length === 0) {
     await store.fetchRankings('电商', 10)
   }
-  
+
   const found = store.candidates.find(c => c.candidate_id === candidateId)
   if (found) {
     candidate.value = found
     const rankIndex = store.rankings.findIndex(r => r.candidate_id === candidateId)
     rank.value = rankIndex + 1
+
+    // 调用LLM分析
+    analysisLoading.value = true
+    try {
+      const result = await store.analyzeCandidate(
+        candidateId,
+        store.currentIndustry || found.job_type || '电商'
+      )
+      if (result.status === 'success' && result.data) {
+        analysisData.value = result.data
+      }
+    } catch (err) {
+      console.error('分析失败:', err)
+    } finally {
+      analysisLoading.value = false
+    }
   }
 })
 </script>
@@ -392,37 +419,126 @@ onMounted(async () => {
   min-width: 50px;
 }
 
-.analysis-section h4 {
-  color: #2E86AB;
-  margin-bottom: 15px;
-  font-size: 16px;
+.analysis-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
-.analysis-section ul {
-  padding-left: 20px;
-  color: #666;
-  line-height: 1.8;
+.analysis-loading {
+  padding: 10px 0;
 }
 
-.analysis-section li {
-  margin-bottom: 8px;
+.loading-tip {
+  text-align: center;
+  color: #909399;
+  font-size: 14px;
+  margin-top: 10px;
 }
 
-.recommendation {
-  background: #f0f7ff;
+.analysis-summary {
+  background: linear-gradient(135deg, #f5f7fa 0%, #e4e8ee 100%);
   padding: 20px;
-  border-radius: 8px;
+  border-radius: 10px;
+  border-left: 4px solid #2E86AB;
 }
 
-.recommendation h4 {
+.analysis-summary h4 {
   color: #2E86AB;
   margin-bottom: 10px;
+  font-size: 15px;
 }
 
-.recommendation p {
+.analysis-summary p {
   color: #2c3e50;
-  line-height: 1.6;
+  line-height: 1.8;
+  font-size: 14px;
+  margin: 0;
+}
+
+.analysis-section {
+  background: #fafafa;
+  padding: 16px;
+  border-radius: 10px;
+  height: 100%;
+}
+
+.analysis-section h4 {
+  color: #2E86AB;
+  margin-bottom: 12px;
   font-size: 15px;
+}
+
+.tag-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.analysis-tag {
+  white-space: normal;
+  height: auto;
+  padding: 8px 12px;
+  line-height: 1.5;
+  font-size: 13px;
+}
+
+.empty-text {
+  color: #c0c4cc;
+  font-size: 13px;
+}
+
+.recommendation-box {
+  background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+  padding: 20px;
+  border-radius: 10px;
+  border-left: 4px solid #67C23A;
+}
+
+.recommendation-box h4 {
+  color: #67C23A;
+  margin-bottom: 10px;
+  font-size: 15px;
+}
+
+.recommendation-box p {
+  color: #2c3e50;
+  line-height: 1.8;
+  font-size: 14px;
+  margin: 0;
+}
+
+.development-box {
+  background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
+  padding: 20px;
+  border-radius: 10px;
+  border-left: 4px solid #E6A23C;
+}
+
+.development-box h4 {
+  color: #E6A23C;
+  margin-bottom: 10px;
+  font-size: 15px;
+}
+
+.development-box ul {
+  padding-left: 20px;
+  color: #2c3e50;
+  line-height: 1.8;
+  font-size: 14px;
+  margin: 0;
+}
+
+.development-box li {
+  margin-bottom: 6px;
+}
+
+.analysis-empty {
+  padding: 40px 0;
+}
+
+.mt-16 {
+  margin-top: 16px;
 }
 
 .mt-20 {

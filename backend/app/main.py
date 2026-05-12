@@ -7,7 +7,7 @@ import sys
 import os
 import json
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Dict
 from datetime import datetime
 import html
 
@@ -23,8 +23,7 @@ backend_dir = current_dir.parent
 project_root = backend_dir.parent
 sys.path.insert(0, str(backend_dir))
 sys.path.insert(0, str(project_root))
-sys.path.insert(0, str(project_root / ".venv"))
-sys.path.insert(0, str(project_root / ".venv" / "Resume_Recognition_Model"))
+sys.path.insert(0, str(project_root / "Resume_Recognition_Model"))
 
 from Dimensional_scoring_model import DimensionalScoringModel
 from Dynamic_Industry_Weight_Matrix import IndustryWeightMatrix
@@ -759,6 +758,157 @@ def fallback_qa(question: str, context: dict) -> dict:
         "question": html.escape(question),
         "answer": answer,
         "source": "template"
+    }
+
+
+class AnalysisRequest(BaseModel):
+    """候选人分析请求"""
+    candidate_name: str
+    industry: str
+
+@app.post("/api/analysis/candidate")
+async def analyze_candidate(request: AnalysisRequest):
+    """
+    LLM智能分析候选人 - 综合所有数据生成分析报告
+    """
+    try:
+        data_manager = get_data_manager(project_root)
+        all_resumes = data_manager.get_all_resumes()
+
+        # 查找目标候选人
+        target_resume = None
+        for r in all_resumes:
+            r_name = r.get('basic_info', {}).get('name', '') or r.get('candidate_id', '')
+            if r_name == request.candidate_name:
+                target_resume = r
+                break
+
+        if not target_resume:
+            raise HTTPException(status_code=404, detail=f"未找到候选人: {request.candidate_name}")
+
+        industry = request.industry or target_resume.get('industry', '通用')
+
+        # 获取行业内排名
+        industry_resumes = [r for r in all_resumes if r.get('industry') == industry]
+        sorted_resumes = sorted(
+            industry_resumes,
+            key=lambda x: x.get('tci_score', 0),
+            reverse=True
+        )
+        rank = 1
+        total = len(sorted_resumes)
+        for i, r in enumerate(sorted_resumes, 1):
+            r_name = r.get('basic_info', {}).get('name', '') or r.get('candidate_id', '')
+            if r_name == request.candidate_name:
+                rank = i
+                break
+
+        # 使用LLM生成分析
+        llm_service = get_llm_service()
+        if llm_service.is_enabled():
+            try:
+                messages = llm_service.build_analysis_prompt(
+                    candidate=target_resume,
+                    industry=industry,
+                    rank=rank,
+                    total=total
+                )
+                answer = await llm_service.chat(messages, temperature=0.6)
+
+                # 尝试解析JSON
+                import json as json_lib
+                try:
+                    # 提取JSON部分（LLM可能返回markdown包裹的JSON）
+                    json_str = answer
+                    if '```json' in json_str:
+                        json_str = json_str.split('```json')[1].split('```')[0]
+                    elif '```' in json_str:
+                        json_str = json_str.split('```')[1].split('```')[0]
+                    analysis = json_lib.loads(json_str.strip())
+                    analysis['source'] = 'llm'
+                    return {"status": "success", "data": analysis}
+                except (json_lib.JSONDecodeError, IndexError):
+                    # JSON解析失败，返回原文
+                    return {
+                        "status": "success",
+                        "data": {
+                            "summary": answer,
+                            "strengths": [],
+                            "weaknesses": [],
+                            "risks": [],
+                            "recommendation": "",
+                            "development_suggestions": [],
+                            "source": "llm"
+                        }
+                    }
+            except Exception as llm_error:
+                import traceback
+                print(f"[WARN] LLM分析失败，使用规则分析: {llm_error}")
+                traceback.print_exc()
+
+        # 规则分析fallback
+        return {"status": "success", "data": _rule_based_analysis(target_resume, industry, rank, total)}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"分析失败: {str(e)}")
+
+
+def _rule_based_analysis(resume: Dict, industry: str, rank: int, total: int) -> Dict:
+    """规则分析 - LLM不可用时的fallback"""
+    scores = resume.get('dimensional_scores', {})
+    tci = resume.get('tci_score', 0)
+    penalty = resume.get('penalty_applied', False)
+    entities = resume.get('entities', {})
+    work_duration = resume.get('work_duration_months', 0)
+
+    dim_names = {
+        "education": "教育背景",
+        "experience": "工作经历",
+        "skill_achievement": "技能成果",
+        "comprehensive": "综合素质"
+    }
+
+    strengths = []
+    weaknesses = []
+    risks = []
+
+    for dim, score in scores.items():
+        if score >= 4:
+            strengths.append(f"{dim_names.get(dim, dim)}优秀，得分{score:.2f}")
+        elif score < 2.5:
+            weaknesses.append(f"{dim_names.get(dim, dim)}较弱，得分{score:.2f}")
+
+    if penalty:
+        risks.append("工作稳定性风险，跳槽较为频繁")
+
+    if work_duration > 0 and work_duration < 24:
+        risks.append(f"工作年限较短（{work_duration/12:.1f}年），经验可能不足")
+
+    if not strengths:
+        strengths.append("各项指标表现均衡")
+
+    summary = f"{resume.get('basic_info', {}).get('name', '该候选人')}应聘{industry}行业，"
+    summary += f"综合评分{tci:.2f}/5.00，行业排名第{rank}/{total}名。"
+
+    if tci >= 4:
+        recommendation = f"强烈推荐录用。综合评分优秀（{tci:.2f}），在行业内排名靠前。"
+    elif tci >= 3.5:
+        recommendation = f"推荐录用。综合评分良好（{tci:.2f}），符合岗位基本要求。"
+    elif tci >= 3:
+        recommendation = f"可以考虑。综合评分中等（{tci:.2f}），建议进一步面试评估。"
+    else:
+        recommendation = f"暂不推荐。综合评分偏低（{tci:.2f}），可能与岗位要求存在差距。"
+
+    return {
+        "summary": summary,
+        "strengths": strengths[:3],
+        "weaknesses": weaknesses[:2],
+        "risks": risks[:2],
+        "recommendation": recommendation,
+        "development_suggestions": ["建议持续提升专业技能", "关注行业发展趋势"],
+        "source": "rule"
     }
 
 

@@ -2,16 +2,17 @@
 
 基于AHP层次分析法与熵权法融合的多维度简历评分系统，支持6大行业的人才竞争力评估与排名。
 
-## 🎯 系统特点
+## 系统特点
 
 - **多维度评分模型**：教育背景、工作经历、技能成果、综合素质四大维度
 - **动态权重计算**：AHP主观权重 + 熵权法客观权重融合
 - **行业自适应**：支持电商、品牌、销售、研发、生产、人力资源六大行业
-- **智能问答**：基于评分结果的智能问答与推荐理由生成
+- **AI智能分析**：基于通义千问大模型的候选人综合分析与录用建议
+- **智能问答**：基于LLM的智能问答与推荐理由生成
 - **可视化展示**：雷达图、柱状图、饼图等多维度数据可视化
 - **报告导出**：支持JSON、CSV格式报告导出
 
-## 🏗️ 系统架构
+## 系统架构
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -21,13 +22,15 @@
 ├─────────────────────────────────────────────────────────────┤
 │  API服务层: FastAPI + Pydantic                               │
 ├─────────────────────────────────────────────────────────────┤
+│  AI服务层: 通义千问 (Qwen) LLM                               │
+├─────────────────────────────────────────────────────────────┤
 │  模型层: Dimensional_scoring_model + weight_model            │
 ├─────────────────────────────────────────────────────────────┤
 │  数据层: Resume_Recognition_Model + MySQL + Redis            │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-## 📋 功能模块
+## 功能模块
 
 ### 1. 简历解析模块
 - 支持PDF、DOCX、TXT格式
@@ -43,24 +46,85 @@
 ### 3. 权重计算模块
 - AHP层次分析法（主观权重）
 - 熵权法（客观权重）
-- 组合权重融合（α=0.5）
+- 组合权重融合（alpha=0.5）
 
-### 4. 前端界面模块
+### 4. AI智能分析模块
+- 基于通义千问大模型的候选人综合分析
+- 自动生成优势、风险、录用建议
+- 支持规则分析fallback
+
+### 5. 前端界面模块
 - 简历上传页面
 - 排名看板（支持行业筛选）
 - 数据分析页面
 - 智能问答页面
-- 候选人详情页
+- 候选人详情页（含AI分析）
 
-## 🚀 快速开始
+## 快速开始
 
-### 环境要求
+### 方式一：Conda 环境部署（推荐）
+
+#### 1. 创建 Conda 环境
+
+```bash
+# 创建 Python 3.10 环境
+conda create -n resume_system python=3.10 -y
+
+# 激活环境
+conda activate resume_system
+```
+
+#### 2. 安装后端依赖
+
+```bash
+cd backend
+pip install -r requirements.txt
+```
+
+#### 3. 配置 LLM API（可选）
+
+编辑 `backend/config.json`，填入通义千问 API Key：
+
+```json
+{
+  "llm": {
+    "api_key": "your-dashscope-api-key",
+    "model": "qwen3.5-flash"
+  }
+}
+```
+
+#### 4. 启动后端服务
+
+```bash
+cd backend
+python run_server.py
+
+# 或直接使用 uvicorn
+uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+```
+
+#### 5. 安装并启动前端
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+#### 6. 访问系统
+
+- 前端界面: http://localhost:5173
+- 后端API: http://localhost:8000
+- API文档: http://localhost:8000/docs
+
+### 方式二：直接使用 Python
+
+#### 环境要求
 - Python 3.8+
 - Node.js 16+
-- MySQL 8.0
-- Redis 6.0
 
-### 安装依赖
+#### 安装依赖
 
 ```bash
 # 后端依赖
@@ -72,72 +136,41 @@ cd frontend
 npm install
 ```
 
-### 配置数据库
-
-编辑 `backend/database.py` 中的数据库配置：
-
-```python
-MYSQL_CONFIG = {
-    'host': '14.103.124.109',
-    'port': 3306,
-    'database': 'jianli',
-    'user': 'jianli',
-    'password': 'aS4QKY5znfZDn4Ts'
-}
-
-REDIS_CONFIG = {
-    'host': '14.103.124.109',
-    'port': 6379,
-    'password': 'redis_b3ZReQ',
-    'db': 9
-}
-```
-
-### 启动服务
+#### 启动服务
 
 ```bash
-# 方法1: 使用启动脚本
-python start_servers.py
-
-# 方法2: 分别启动
 # 后端
-cd backend/app
-uvicorn main:app --reload --host 0.0.0.0 --port 8000
+cd backend
+python run_server.py
 
-# 前端
+# 前端（另一个终端）
 cd frontend
 npm run dev
 ```
 
-### 访问系统
+## Conda 环境管理
 
-- 前端界面: http://localhost:5173
-- 后端API: http://localhost:8000
-- API文档: http://localhost:8000/docs
+```bash
+# 查看所有环境
+conda env list
 
-## 📊 评分模型
+# 激活环境
+conda activate resume_system
 
-### TCI综合得分公式
+# 退出环境
+conda deactivate
 
+# 删除环境
+conda remove -n resume_system --all
+
+# 导出环境配置
+conda env export > environment.yml
+
+# 从配置文件创建环境
+conda env create -f environment.yml
 ```
-TCI = Wedu × Sedu + Wexp × Sexp + Wskill × Sskill + Wadj × Sadj
-```
 
-### 维度权重示例
-
-| 维度 | 技术类 | 管理类 |
-|------|--------|--------|
-| 教育背景 | 15% | 20% |
-| 工作经历 | 30% | 35% |
-| 技能成果 | 40% | 25% |
-| 综合素质 | 15% | 20% |
-
-### 跳槽惩罚机制
-
-- 条件：5年内跳槽次数 > 3次
-- 惩罚：TCI总分 × 0.9
-
-## 🔌 API接口
+## API 接口
 
 ### 简历上传
 ```http
@@ -146,6 +179,17 @@ Content-Type: multipart/form-data
 
 file: <简历文件>
 industry: <行业代码>
+```
+
+### 简历解析
+```http
+POST /api/resume/parse
+Content-Type: application/json
+
+{
+  "file_path": "uploads/xxx.pdf",
+  "industry": "电商"
+}
 ```
 
 ### 单份评分
@@ -177,6 +221,33 @@ Content-Type: application/json
 GET /api/rank/industry/{industry}?top_n=10
 ```
 
+### AI候选人分析
+```http
+POST /api/analysis/candidate
+Content-Type: application/json
+
+{
+  "candidate_name": "候选人姓名",
+  "industry": "电商"
+}
+```
+
+响应：
+```json
+{
+  "status": "success",
+  "data": {
+    "summary": "综合评价...",
+    "strengths": ["优势1", "优势2"],
+    "weaknesses": ["不足1"],
+    "risks": ["风险1"],
+    "recommendation": "录用建议...",
+    "development_suggestions": ["建议1", "建议2"],
+    "source": "llm"
+  }
+}
+```
+
 ### 智能问答
 ```http
 POST /api/qa/ask
@@ -191,47 +262,79 @@ Content-Type: application/json
 }
 ```
 
-## 📁 项目结构
+### 其他接口
+```http
+GET /api/industries          # 获取支持的行业列表
+GET /api/data/statistics     # 获取数据统计
+GET /api/data/resumes        # 获取所有简历数据
+GET /api/llm/status          # 获取LLM服务状态
+GET /api/cache/stats         # 获取缓存统计
+POST /api/cache/clear        # 清除缓存
+```
+
+## 评分模型
+
+### TCI综合得分公式
+
+```
+TCI = Wedu x Sedu + Wexp x Sexp + Wskill x Sskill + Wadj x Sadj
+```
+
+### 维度权重示例
+
+| 行业 | 教育背景 | 工作经历 | 技能成果 | 综合素质 |
+|------|----------|----------|----------|----------|
+| 电商 | 10% | 30% | 40% | 20% |
+| 研发 | 20% | 30% | 40% | 10% |
+| 销售 | 10% | 35% | 40% | 15% |
+| 品牌 | 15% | 30% | 35% | 20% |
+| 生产 | 15% | 35% | 35% | 15% |
+| 人力资源 | 15% | 30% | 35% | 20% |
+
+### 跳槽惩罚机制
+
+- 条件：5年内跳槽次数 > 3次
+- 惩罚：TCI总分 x 0.9
+
+## 项目结构
 
 ```
 .
 ├── backend/
 │   ├── app/
-│   │   └── main.py          # FastAPI主入口
-│   ├── database.py          # 数据库配置
-│   ├── requirements.txt     # Python依赖
-│   └── output/              # 输出目录
+│   │   ├── main.py              # FastAPI主入口
+│   │   ├── llm_service.py       # LLM服务（通义千问）
+│   │   ├── data_manager.py      # 数据管理
+│   │   ├── cache_manager.py     # 缓存管理
+│   │   └── data_validator.py    # 数据验证
+│   ├── Dimensional_scoring_model/  # 维度评分模型
+│   ├── weight_model/               # 权重计算模型
+│   ├── database.py              # 数据库配置
+│   ├── config.json              # LLM配置
+│   ├── requirements.txt         # Python依赖
+│   └── run_server.py            # 启动脚本
 ├── frontend/
 │   ├── src/
-│   │   ├── views/           # 页面组件
-│   │   ├── stores/          # Pinia状态管理
-│   │   ├── router/          # Vue Router配置
-│   │   └── App.vue          # 根组件
-│   ├── package.json         # Node依赖
-│   └── vite.config.js       # Vite配置
-├── .venv/                   # 模型代码
-│   ├── Resume_Recognition_Model/
-│   ├── Dimensional_scoring_model/
-│   ├── weight_model/
-│   └── Dynamic_Industry_Weight_Matrix/
-├── start_servers.py         # 启动脚本
-└── README.md               # 项目说明
+│   │   ├── views/               # 页面组件
+│   │   │   ├── Home.vue         # 首页
+│   │   │   ├── Upload.vue       # 上传页
+│   │   │   ├── Ranking.vue      # 排名页
+│   │   │   ├── Analysis.vue     # 分析页
+│   │   │   ├── QA.vue           # 问答页
+│   │   │   └── CandidateDetail.vue  # 候选人详情（含AI分析）
+│   │   ├── stores/              # Pinia状态管理
+│   │   ├── router/              # Vue Router配置
+│   │   └── App.vue              # 根组件
+│   ├── package.json             # Node依赖
+│   └── vite.config.js           # Vite配置
+├── Resume_Recognition_Model/    # 简历解析模块
+│   ├── resume_parser.py         # 简历解析器
+│   └── config/
+│       └── company_rating.json  # 公司/高校评级知识库
+├── Dynamic_Industry_Weight_Matrix/  # 行业权重矩阵模块
+└── README.md
 ```
 
-## 🎓 开源项目参考
-
-本项目参考了以下开源项目：
-
-1. **teash1rt/resume-analysis-system** - Vue3+SpringBoot架构
-2. **Greyisheep/resume-ranking-assessment** - FastAPI+sentence-transformers
-3. **vectornguyen76/resume-ranking** - LLM+LangChain集成
-4. **WhiteNight123/parser-resume** - PaddleOCR解析
-
-## 📄 许可证
+## 许可证
 
 MIT License
-
-## 👥 开发者
-
-- 基于数学建模竞赛《人才简历综合优选》赛题开发
-- 采用AHP+熵权法融合模型

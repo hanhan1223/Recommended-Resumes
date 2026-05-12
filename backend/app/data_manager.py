@@ -11,7 +11,7 @@ class ResumeDataManager:
     
     def __init__(self, project_root: Path):
         self.project_root = Path(project_root)
-        self.data_file = self.project_root / ".venv" / "Resume_Recognition_Model" / "output" / "all_resumes_summary.json"
+        self.data_file = self.project_root / "Resume_Recognition_Model" / "output" / "all_resumes_summary.json"
         self.upload_dir = self.project_root / "backend" / "uploads"
         
         # 确保目录存在

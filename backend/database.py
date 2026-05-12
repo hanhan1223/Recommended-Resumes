@@ -3,7 +3,8 @@
 支持MySQL和Redis
 """
 import os
-from sqlalchemy import create_engine
+from datetime import datetime
+from sqlalchemy import create_engine, Column, Integer, String, Float, Boolean, DateTime, JSON
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 import redis
