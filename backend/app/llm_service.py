@@ -347,6 +347,78 @@ class LLMService:
 
         return messages
 
+    def build_industry_recommendation_prompt(self, question: str, industry: str, top_candidates: List[Dict]) -> List[Dict]:
+        """构建行业推荐提示词 - 用于跨候选人对比推荐"""
+        def fmt(val):
+            if val is None or val == 'N/A' or val == '':
+                return 'N/A'
+            try:
+                return f"{float(val):.2f}"
+            except (ValueError, TypeError):
+                return str(val)
+
+        dim_names = {
+            "education": "教育背景",
+            "experience": "工作经历",
+            "skill_achievement": "技能成果",
+            "comprehensive": "综合素质"
+        }
+
+        candidates_text = ""
+        for i, c in enumerate(top_candidates, 1):
+            basic_info = c.get("basic_info", {})
+            name = basic_info.get("name", c.get("candidate_id", "未知"))
+            scores = c.get("dimensional_scores", {})
+            penalty = "有" if c.get("penalty_applied") else "无"
+
+            candidates_text += f"""
+### 第{i}名: {name}
+- TCI综合评分: {fmt(c.get('tci_score', 0))} / 5.00
+- 教育背景: {fmt(scores.get('education'))} | 工作经历: {fmt(scores.get('experience'))} | 技能成果: {fmt(scores.get('skill_achievement'))} | 综合素质: {fmt(scores.get('comprehensive'))}
+- 跳槽风险: {penalty}"""
+
+            entities = c.get("entities", {})
+            companies = entities.get("companies", [])
+            positions = entities.get("positions", [])
+            skills = entities.get("skills", [])
+            if companies:
+                candidates_text += f"\n- 曾任职: {', '.join(companies[:3])}"
+            if positions:
+                candidates_text += f"\n- 岗位: {', '.join(positions[:3])}"
+            if skills:
+                candidates_text += f"\n- 技能: {', '.join(skills[:5])}"
+
+        context = f"""你是人才简历综合优选系统的智能推荐顾问。用户正在查看【{industry}】行业，希望了解该行业的候选人推荐情况。
+
+以下是该行业排名前 {len(top_candidates)} 的候选人数据：
+{candidates_text}
+
+---
+用户问题: {question}"""
+
+        messages = [
+            {"role": "system", "content": """你是一个专业的人才推荐顾问。请使用Markdown格式回答，结构如下：
+
+## 【候选人对比】
+用表格对比所有候选人的核心数据（TCI评分、各维度得分、跳槽风险）
+
+## 【推荐排序】
+明确给出推荐录用的优先顺序，并说明排序理由
+
+## 【录用建议】
+- 对每位候选人给出简要的录用建议（推荐/考虑/不推荐）
+- 说明适合的岗位方向或团队
+
+---
+⚠️ 重要提醒：
+1. 所有评分必须使用上方提供的实际数据，格式为XX.XX（如3.50）
+2. 禁止编造或修改任何数据
+3. 回答专业、客观，总字数300-500字"""},
+            {"role": "user", "content": context}
+        ]
+
+        return messages
+
 
 # 全局LLM服务实例
 _llm_service: Optional[LLMService] = None

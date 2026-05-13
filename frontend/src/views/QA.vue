@@ -52,7 +52,7 @@
               v-model="inputMessage"
               type="textarea"
               :rows="2"
-              placeholder="请输入您的问题，例如：排名多少？得分如何？有什么优势？是否推荐？"
+              placeholder="请输入您的问题。选了候选人可问：排名多少？有什么优势？只选了行业可问：推荐谁？谁最合适？"
               @keyup.enter="sendMessage"
             />
             <el-button 
@@ -114,9 +114,10 @@
           </template>
           <el-select
             v-model="selectedCandidate"
-            placeholder="请先选择行业"
+            :placeholder="selectedIndustry ? '可选，不选则为行业推荐模式' : '请先选择行业'"
             style="width: 100%"
             :disabled="!selectedIndustry"
+            clearable
             @change="onCandidateChange"
           >
             <el-option
@@ -151,11 +152,28 @@
           </div>
         </el-card>
 
+        <!-- 行业推荐模式提示 -->
+        <el-card class="info-card" v-if="selectedIndustry && !selectedCandidate">
+          <template #header>
+            <span>🎯 行业推荐模式</span>
+          </template>
+          <div class="recommend-hint">
+            <p>当前已选择行业，可直接提问获取候选人推荐：</p>
+            <ul>
+              <li>该行业谁最合适？</li>
+              <li>推荐前三名候选人</li>
+              <li>谁的教育背景最好？</li>
+              <li>谁没有跳槽风险？</li>
+            </ul>
+          </div>
+        </el-card>
+
         <!-- 问答提示 -->
         <el-card class="info-card">
           <template #header>
             <span>❓ 可以问什么</span>
           </template>
+          <p style="color: #999; font-size: 12px; margin-bottom: 8px;">候选人模式：</p>
           <ul class="qa-tips">
             <li>排名情况和位次</li>
             <li>TCI综合得分详情</li>
@@ -163,6 +181,13 @@
             <li>优势和亮点</li>
             <li>风险和注意事项</li>
             <li>录用推荐建议</li>
+          </ul>
+          <p style="color: #999; font-size: 12px; margin: 10px 0 8px;">行业推荐模式：</p>
+          <ul class="qa-tips">
+            <li>该行业谁最合适？</li>
+            <li>推荐前三名候选人</li>
+            <li>候选人对比分析</li>
+            <li>谁没有跳槽风险？</li>
           </ul>
         </el-card>
       </el-col>
@@ -181,7 +206,7 @@ const store = useResumeStore()
 const messages = ref([
   {
     type: 'assistant',
-    content: '您好！我是智能问答助手，可以帮您分析候选人的评分情况、排名信息、优势和风险等。请先选择一位候选人，然后向我提问吧！',
+    content: '您好！我是智能问答助手，支持两种模式：\n\n1. **候选人分析**：选择行业和候选人，询问该候选人的排名、得分、优势、风险等\n2. **行业推荐**：只选择行业，直接提问"谁最合适？"，获取该行业候选人对比推荐\n\n请先选择一个行业开始吧！',
     time: new Date().toLocaleTimeString()
   }
 ])
@@ -205,14 +230,26 @@ const checkLLMStatus = async () => {
   }
 }
 
-const quickQuestions = [
-  '排名多少？',
-  '得分如何？',
-  '有什么优势？',
-  '有什么风险？',
-  '是否推荐录用？',
-  '工作稳定性如何？'
-]
+const quickQuestions = computed(() => {
+  if (selectedIndustry.value && !selectedCandidate.value) {
+    return [
+      '该行业推荐谁？',
+      '谁的综合评分最高？',
+      '推荐前三名候选人',
+      '谁没有跳槽风险？',
+      '谁的教育背景最好？',
+      '谁的工作经历最丰富？'
+    ]
+  }
+  return [
+    '排名多少？',
+    '得分如何？',
+    '有什么优势？',
+    '有什么风险？',
+    '是否推荐录用？',
+    '工作稳定性如何？'
+  ]
+})
 
 const currentCandidate = computed(() => {
   if (!selectedCandidate.value) return null
@@ -266,7 +303,12 @@ const scrollToBottom = async () => {
 
 const sendMessage = async () => {
   if (!inputMessage.value.trim()) return
-  
+
+  if (!selectedIndustry.value && !selectedCandidate.value) {
+    ElMessage.warning('请先选择一个行业')
+    return
+  }
+
   const userMsg = inputMessage.value.trim()
   messages.value.push({
     type: 'user',
@@ -280,15 +322,27 @@ const sendMessage = async () => {
   
   try {
     // 构建上下文
-    const context = currentCandidate.value ? {
-      candidate_id: currentCandidate.value.candidate_id,
-      industry: selectedIndustry.value,
-      rank: currentCandidate.value.rank,
-      tci_score: currentCandidate.value.tci_score,
-      penalty_applied: currentCandidate.value.penalty_applied,
-      dimensional_scores: currentCandidate.value.dimensional_scores,
-      dimension_weights: currentCandidate.value.dimension_weights
-    } : {}
+    let context
+    if (currentCandidate.value) {
+      // 候选人模式
+      context = {
+        candidate_id: currentCandidate.value.candidate_id,
+        industry: selectedIndustry.value,
+        rank: currentCandidate.value.rank,
+        tci_score: currentCandidate.value.tci_score,
+        penalty_applied: currentCandidate.value.penalty_applied,
+        dimensional_scores: currentCandidate.value.dimensional_scores,
+        dimension_weights: currentCandidate.value.dimension_weights
+      }
+    } else if (selectedIndustry.value) {
+      // 行业推荐模式
+      context = {
+        industry: selectedIndustry.value,
+        mode: 'industry_recommend'
+      }
+    } else {
+      context = {}
+    }
 
     const response = await store.askQuestion(userMsg, context)
     
@@ -321,8 +375,14 @@ const onCandidateChange = () => {
       content: `已选择候选人：${currentCandidate.value.candidate_id}。您可以询问关于该候选人的排名、得分、优势、风险等问题。`,
       time: new Date().toLocaleTimeString()
     })
-    scrollToBottom()
+  } else if (selectedIndustry.value) {
+    messages.value.push({
+      type: 'assistant',
+      content: '已切换到**行业推荐模式**，您可以直接提问如"该行业推荐谁？"获取候选人推荐。',
+      time: new Date().toLocaleTimeString()
+    })
   }
+  scrollToBottom()
 }
 
 const onIndustryChange = async () => {
@@ -330,12 +390,18 @@ const onIndustryChange = async () => {
   if (selectedIndustry.value) {
     await store.fetchRankings(selectedIndustry.value, 20)
     await store.batchScore(selectedIndustry.value)
+    messages.value.push({
+      type: 'assistant',
+      content: `已选择行业，当前为**行业推荐模式**。您可以直接提问如"该行业推荐谁？"、"谁最合适？"等，也可以从右侧下拉框选择具体候选人进行针对性提问。`,
+      time: new Date().toLocaleTimeString()
+    })
+    scrollToBottom()
   }
 }
 
 onMounted(() => {
-  // 检查LLM状态
   checkLLMStatus()
+  store.fetchIndustries()
 })
 </script>
 
@@ -494,5 +560,33 @@ onMounted(() => {
 
 .qa-tips li:last-child {
   border-bottom: none;
+}
+
+.recommend-hint p {
+  color: #666;
+  font-size: 14px;
+  margin-bottom: 10px;
+}
+
+.recommend-hint ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.recommend-hint li {
+  padding: 6px 0;
+  color: #2E86AB;
+  font-size: 13px;
+  border-bottom: 1px dashed #eee;
+}
+
+.recommend-hint li:last-child {
+  border-bottom: none;
+}
+
+.recommend-hint li::before {
+  content: '💡';
+  margin-right: 6px;
 }
 </style>

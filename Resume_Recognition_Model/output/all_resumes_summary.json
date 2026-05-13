@@ -8850,11 +8850,21 @@
     "candidate_id": "ZZL"
   },
   {
-    "file_path": "d:\\Users\\86136\\Desktop\\小组作业\\code\\code(1)\\.venv\\数据\\销售\\销售2\\20221115-ZLL-（）for-外贸销售员.docx",
+    "file_path": "C:\\Users\\ipsa\\Desktop\\数据要素大赛\\code\\code\\backend\\uploads\\20221115-ZLL-（）for-外贸销售员.docx",
     "file_name": "20221115-ZLL-（）for-外贸销售员.docx",
     "industry": "销售",
     "basic_info": {
-      "name": "ZLL"
+      "name": "ZLL",
+      "gender": null,
+      "birth_year": null,
+      "origin": null,
+      "location": null,
+      "marital_status": null,
+      "languages": null,
+      "current_salary": null,
+      "expected_salary": null,
+      "email": null,
+      "phone": null
     },
     "entities": {
       "companies": [
@@ -8999,14 +9009,25 @@
       "comprehensive": 0.26371452308611676
     },
     "penalty_applied": false,
-    "candidate_id": "ZLL"
+    "candidate_id": "ZLL",
+    "industry_source": "user_selected"
   },
   {
-    "file_path": "d:\\Users\\86136\\Desktop\\小组作业\\code\\code(1)\\.venv\\数据\\销售\\销售2\\20221224-LPM（）for-外贸销售员.docx",
+    "file_path": "C:\\Users\\ipsa\\Desktop\\数据要素大赛\\code\\code\\backend\\uploads\\20221224-LPM（）for-外贸销售员.docx",
     "file_name": "20221224-LPM（）for-外贸销售员.docx",
     "industry": "销售",
     "basic_info": {
-      "name": "LPM"
+      "name": "LPM",
+      "gender": null,
+      "birth_year": null,
+      "origin": null,
+      "location": null,
+      "marital_status": null,
+      "languages": null,
+      "current_salary": null,
+      "expected_salary": null,
+      "email": null,
+      "phone": null
     },
     "entities": {
       "companies": [
@@ -9076,14 +9097,25 @@
         "reason": "本科院校"
       }
     ],
-    "candidate_id": "LPM"
+    "candidate_id": "LPM",
+    "industry_source": "user_selected"
   },
   {
-    "file_path": "d:\\Users\\86136\\Desktop\\小组作业\\code\\code(1)\\.venv\\数据\\销售\\销售2\\20230418-DBY（）for-业务负责人.docx",
+    "file_path": "C:\\Users\\ipsa\\Desktop\\数据要素大赛\\code\\code\\backend\\uploads\\20230418-DBY（）for-业务负责人.docx",
     "file_name": "20230418-DBY（）for-业务负责人.docx",
     "industry": "销售",
     "basic_info": {
-      "name": "DBY"
+      "name": "DBY",
+      "gender": null,
+      "birth_year": null,
+      "origin": null,
+      "location": null,
+      "marital_status": null,
+      "languages": null,
+      "current_salary": null,
+      "expected_salary": null,
+      "email": null,
+      "phone": null
     },
     "entities": {
       "companies": [
@@ -9412,14 +9444,25 @@
       "comprehensive": 0.26371452308611676
     },
     "penalty_applied": true,
-    "candidate_id": "DBY"
+    "candidate_id": "DBY",
+    "industry_source": "user_selected"
   },
   {
-    "file_path": "d:\\Users\\86136\\Desktop\\小组作业\\code\\code(1)\\.venv\\数据\\销售\\销售2\\20250221-WY-CS总监(）-for CS总监.docx",
+    "file_path": "C:\\Users\\ipsa\\Desktop\\数据要素大赛\\code\\code\\backend\\uploads\\20250221-WY-CS总监(）-for CS总监.docx",
     "file_name": "20250221-WY-CS总监(）-for CS总监.docx",
     "industry": "销售",
     "basic_info": {
-      "name": "WY"
+      "name": "WY",
+      "gender": null,
+      "birth_year": null,
+      "origin": null,
+      "location": null,
+      "marital_status": null,
+      "languages": null,
+      "current_salary": null,
+      "expected_salary": null,
+      "email": null,
+      "phone": null
     },
     "entities": {
       "companies": [
@@ -9567,14 +9610,25 @@
       "comprehensive": 0.26371452308611676
     },
     "penalty_applied": false,
-    "candidate_id": "WY"
+    "candidate_id": "WY",
+    "industry_source": "user_selected"
   },
   {
-    "file_path": "d:\\Users\\86136\\Desktop\\小组作业\\code\\code(1)\\.venv\\数据\\销售\\销售2\\20250222-GB（）forCS渠道负责人.docx",
+    "file_path": "C:\\Users\\ipsa\\Desktop\\数据要素大赛\\code\\code\\backend\\uploads\\20250222-GB（）forCS渠道负责人.docx",
     "file_name": "20250222-GB（）forCS渠道负责人.docx",
     "industry": "销售",
     "basic_info": {
-      "name": "GB"
+      "name": "GB",
+      "gender": null,
+      "birth_year": null,
+      "origin": null,
+      "location": null,
+      "marital_status": null,
+      "languages": null,
+      "current_salary": null,
+      "expected_salary": null,
+      "email": null,
+      "phone": null
     },
     "entities": {
       "companies": [
@@ -9956,7 +10010,8 @@
       "comprehensive": 0.26371452308611676
     },
     "penalty_applied": false,
-    "candidate_id": "GB"
+    "candidate_id": "GB",
+    "industry_source": "user_selected"
   },
   {
     "file_path": "d:\\Users\\86136\\Desktop\\小组作业\\code\\code(1)\\.venv\\数据\\研发\\研发2\\20240316 -LZ博士-研发总监（）-for研究院院长.docx",

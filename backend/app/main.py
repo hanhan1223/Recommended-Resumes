@@ -636,6 +636,9 @@ async def intelligent_qa(request: QARequest):
     """
     智能问答功能
     基于LLM大模型回答用户问题
+    支持两种模式：
+    1. 选定候选人：针对单个候选人提问
+    2. 行业推荐：只选行业，推荐最合适的人选
     """
     try:
         context = request.context or {}
@@ -643,7 +646,48 @@ async def intelligent_qa(request: QARequest):
 
         candidate_id = context.get('candidate_id', '')
         industry = context.get('industry', '')
+        mode = context.get('mode', '')
 
+        # 行业推荐模式：未选定候选人但选了行业
+        if not candidate_id and industry:
+            data_manager = get_data_manager(project_root)
+            all_resumes = data_manager.get_all_resumes()
+            industry_resumes = [r for r in all_resumes if r.get('industry') == industry]
+            sorted_resumes = sorted(
+                industry_resumes,
+                key=lambda x: x.get('tci_score', 0),
+                reverse=True
+            )
+            top_candidates = sorted_resumes[:5]
+
+            if not top_candidates:
+                return {
+                    "status": "success",
+                    "question": html.escape(request.question),
+                    "answer": f"暂未找到【{industry}】行业的候选人数据。",
+                    "source": "template"
+                }
+
+            if llm_service.is_enabled():
+                try:
+                    messages = llm_service.build_industry_recommendation_prompt(
+                        question=request.question,
+                        industry=industry,
+                        top_candidates=top_candidates
+                    )
+                    answer = await llm_service.chat(messages)
+                    return {
+                        "status": "success",
+                        "question": html.escape(request.question),
+                        "answer": answer,
+                        "source": "llm"
+                    }
+                except Exception:
+                    return fallback_industry_recommendation(request.question, industry, top_candidates)
+            else:
+                return fallback_industry_recommendation(request.question, industry, top_candidates)
+
+        # 候选人模式：原有逻辑
         full_resume = None
         if candidate_id:
             data_manager = get_data_manager(project_root)
@@ -752,6 +796,55 @@ def fallback_qa(question: str, context: dict) -> dict:
 
     else:
         answer = "我是智能问答助手，可以回答关于候选人排名、得分、优势、风险、推荐意见等问题。请尝试问：'排名多少？'、'得分如何？'、'有什么优势？'、'有没有风险？'、'是否推荐？'"
+
+    return {
+        "status": "success",
+        "question": html.escape(question),
+        "answer": answer,
+        "source": "template"
+    }
+
+
+def fallback_industry_recommendation(question: str, industry: str, top_candidates: list) -> dict:
+    """
+    行业推荐备用逻辑（当LLM不可用时）
+    """
+    dim_names = {
+        "education": "教育背景",
+        "experience": "工作经历",
+        "skill_achievement": "技能成果",
+        "comprehensive": "综合素质"
+    }
+
+    answer = f"## 【{industry}行业候选人推荐】\n\n"
+    answer += "### 候选人对比\n\n"
+    answer += "| 排名 | 候选人 | TCI评分 | 教育背景 | 工作经历 | 技能成果 | 综合素质 | 跳槽风险 |\n"
+    answer += "|------|--------|---------|----------|----------|----------|----------|----------|\n"
+
+    for i, c in enumerate(top_candidates[:5], 1):
+        basic_info = c.get("basic_info", {})
+        name = basic_info.get("name", c.get("candidate_id", "未知"))
+        tci = c.get("tci_score", 0)
+        scores = c.get("dimensional_scores", {})
+        penalty = "有" if c.get("penalty_applied") else "无"
+        answer += f"| {i} | {name} | {float(tci):.2f} | {float(scores.get('education', 0)):.2f} | {float(scores.get('experience', 0)):.2f} | {float(scores.get('skill_achievement', 0)):.2f} | {float(scores.get('comprehensive', 0)):.2f} | {penalty} |\n"
+
+    answer += "\n### 推荐排序\n\n"
+    for i, c in enumerate(top_candidates[:3], 1):
+        basic_info = c.get("basic_info", {})
+        name = basic_info.get("name", c.get("candidate_id", "未知"))
+        tci = c.get("tci_score", 0)
+        scores = c.get("dimensional_scores", {})
+        best_dim = max(scores.items(), key=lambda x: x[1]) if scores else ("", 0)
+        best_dim_name = dim_names.get(best_dim[0], best_dim[0])
+        penalty = c.get("penalty_applied", False)
+
+        recommend = "强烈推荐" if float(tci) >= 4 and not penalty else "推荐" if float(tci) >= 3.5 else "可考虑" if float(tci) >= 3 else "不推荐"
+        answer += f"{i}. **{name}** — TCI: {float(tci):.2f}，优势维度: {best_dim_name}，{recommend}\n"
+
+    answer += "\n### 录用建议\n\n"
+    answer += "- 以上为该行业排名前3的候选人，建议优先考虑排名靠前且无跳槽风险的候选人\n"
+    answer += "- 具体录用决策还需结合面试表现和岗位需求综合判断"
 
     return {
         "status": "success",
