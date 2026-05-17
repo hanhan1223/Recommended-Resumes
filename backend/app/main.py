@@ -31,6 +31,7 @@ from app.data_manager import get_data_manager, ResumeDataManager
 from app.llm_service import get_llm_service, init_llm_service
 from app.data_validator import DataValidator
 from app.cache_manager import get_cache_manager
+from Person_job_fit_model import PersonJobFitModel
 
 app = FastAPI(
     title="人才简历综合优选系统",
@@ -50,6 +51,7 @@ app.add_middleware(
 # 全局模型实例
 weight_matrix_calculator = None
 scoring_model = None
+person_job_fit_model = None  # 人岗匹配模型
 
 # ============== 数据模型定义 ==============
 
@@ -114,6 +116,9 @@ async def startup_event():
         save_dir=str(project_root / "backend" / "output" / "visualizations"),
         verbose=True
     )
+    
+    # 初始化人岗匹配模型
+    person_job_fit_model = PersonJobFitModel(verbose=True)
 
     print("\n[OK] System initialization completed!")
     print("="*60)
@@ -1100,6 +1105,326 @@ async def get_supported_industries():
             {"code": "生产", "name": "生产管理", "description": "生产管理、厂长、质量等岗位"},
             {"code": "人力资源", "name": "人力资源", "description": "HR、招聘、薪酬等岗位"}
         ]
+    }
+
+
+# ============== 人岗匹配模块 API ==============
+
+class JobProfileRequest(BaseModel):
+    """岗位画像抽取请求"""
+    job_description: str
+    requirements: Optional[str] = None
+
+class JobMatchingRequest(BaseModel):
+    """人岗匹配请求"""
+    resume_id: str
+    job_profile: Optional[Dict] = None
+    job_description: Optional[str] = None
+    requirements: Optional[str] = None
+    include_details: bool = True
+
+class BatchMatchingRequest(BaseModel):
+    """批量人岗匹配请求"""
+    resume_ids: List[str]
+    job_profile: Optional[Dict] = None
+    job_description: Optional[str] = None
+    requirements: Optional[str] = None
+
+class RiskAssessmentRequest(BaseModel):
+    """风险评估请求"""
+    resume_id: str
+    job_profile: Optional[Dict] = None
+
+class PotentialEvaluationRequest(BaseModel):
+    """潜力评估请求"""
+    resume_id: str
+
+class ComprehensiveReportRequest(BaseModel):
+    """综合报告请求"""
+    resume_id: str
+    job_description: Optional[str] = None
+    requirements: Optional[str] = None
+    include_charts: bool = False
+
+@app.post("/api/job-profile/parse")
+async def parse_job_profile(request: JobProfileRequest):
+    """
+    抽取岗位画像 - 从岗位描述文本提取结构化信息
+    """
+    try:
+        global person_job_fit_model
+        if person_job_fit_model is None:
+            person_job_fit_model = PersonJobFitModel(verbose=False)
+        
+        # 抽取岗位画像
+        profile = person_job_fit_model.extract_job_profile(
+            job_description=request.job_description,
+            requirements=request.requirements
+        )
+        
+        return {
+            "status": "success",
+            "job_profile": profile
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"岗位画像抽取失败：{str(e)}")
+
+@app.post("/api/matching/score")
+async def score_job_matching(request: JobMatchingRequest):
+    """
+    人岗匹配评分 - 计算候选人与岗位的匹配度
+    """
+    try:
+        global person_job_fit_model
+        if person_job_fit_model is None:
+            person_job_fit_model = PersonJobFitModel(verbose=False)
+        
+        # 获取简历
+        data_manager = get_data_manager(project_root)
+        all_resumes = data_manager.get_all_resumes()
+        
+        target_resume = None
+        for r in all_resumes:
+            r_name = r.get('basic_info', {}).get('name', '') or r.get('candidate_id', '')
+            if r_name == request.resume_id:
+                target_resume = r
+                break
+        
+        if not target_resume:
+            raise HTTPException(status_code=404, detail=f"未找到候选人：{request.resume_id}")
+        
+        # 处理岗位画像
+        if request.job_profile:
+            job_profile = request.job_profile
+        elif request.job_description:
+            job_profile = person_job_fit_model.extract_job_profile(
+                job_description=request.job_description,
+                requirements=request.requirements,
+                save_path=None
+            )
+        else:
+            raise HTTPException(status_code=400, detail="请提供岗位画像或岗位描述")
+        
+        # 计算匹配度
+        result = person_job_fit_model.single_matching(
+            resume=target_resume,
+            job_profile=job_profile,
+            include_details=request.include_details
+        )
+        
+        return {
+            "status": "success",
+            "matching": result
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"人岗匹配评分失败：{str(e)}")
+
+@app.post("/api/matching/batch")
+async def batch_job_matching(request: BatchMatchingRequest):
+    """
+    批量人岗匹配评分
+    """
+    try:
+        global person_job_fit_model
+        if person_job_fit_model is None:
+            person_job_fit_model = PersonJobFitModel(verbose=False)
+        
+        # 获取简历
+        data_manager = get_data_manager(project_root)
+        all_resumes = data_manager.get_all_resumes()
+        
+        target_resumes = []
+        for resume_id in request.resume_ids:
+            for r in all_resumes:
+                r_name = r.get('basic_info', {}).get('name', '') or r.get('candidate_id', '')
+                if r_name == resume_id:
+                    target_resumes.append(r)
+                    break
+        
+        if not target_resumes:
+            raise HTTPException(status_code=404, detail="未找到任何候选人简历")
+        
+        # 处理岗位画像
+        if request.job_profile:
+            job_profile = request.job_profile
+        elif request.job_description:
+            job_profile = person_job_fit_model.extract_job_profile(
+                job_description=request.job_description,
+                requirements=request.requirements,
+                save_path=None
+            )
+        else:
+            raise HTTPException(status_code=400, detail="请提供岗位画像或岗位描述")
+        
+        # 批量计算匹配度
+        results = person_job_fit_model.batch_matching(
+            resumes=target_resumes,
+            job_profile=job_profile,
+            include_details=True
+        )
+        
+        return {
+            "status": "success",
+            "total": len(results),
+            "matching_results": results
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"批量人岗匹配评分失败：{str(e)}")
+
+@app.post("/api/risk/assessment")
+async def assess_risk(request: RiskAssessmentRequest):
+    """
+    风险识别 - 识别候选人简历中的风险因素
+    """
+    try:
+        global person_job_fit_model
+        if person_job_fit_model is None:
+            person_job_fit_model = PersonJobFitModel(verbose=False)
+        
+        # 获取简历
+        data_manager = get_data_manager(project_root)
+        all_resumes = data_manager.get_all_resumes()
+        
+        target_resume = None
+        for r in all_resumes:
+            r_name = r.get('basic_info', {}).get('name', '') or r.get('candidate_id', '')
+            if r_name == request.resume_id:
+                target_resume = r
+                break
+        
+        if not target_resume:
+            raise HTTPException(status_code=404, detail=f"未找到候选人：{request.resume_id}")
+        
+        # 识别风险
+        result = person_job_fit_model.single_risk_assessment(
+            resume=target_resume,
+            job_profile=request.job_profile
+        )
+        
+        return {
+            "status": "success",
+            "risk_assessment": result
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"风险识别失败：{str(e)}")
+
+@app.post("/api/potential/evaluation")
+async def evaluate_potential(request: PotentialEvaluationRequest):
+    """
+    潜力评估 - 评估候选人的成长潜力
+    """
+    try:
+        global person_job_fit_model
+        if person_job_fit_model is None:
+            person_job_fit_model = PersonJobFitModel(verbose=False)
+        
+        # 获取简历
+        data_manager = get_data_manager(project_root)
+        all_resumes = data_manager.get_all_resumes()
+        
+        target_resume = None
+        for r in all_resumes:
+            r_name = r.get('basic_info', {}).get('name', '') or r.get('candidate_id', '')
+            if r_name == request.resume_id:
+                target_resume = r
+                break
+        
+        if not target_resume:
+            raise HTTPException(status_code=404, detail=f"未找到候选人：{request.resume_id}")
+        
+        # 评估潜力
+        result = person_job_fit_model.single_potential_evaluation(
+            resume=target_resume
+        )
+        
+        return {
+            "status": "success",
+            "potential_evaluation": result
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"潜力评估失败：{str(e)}")
+
+@app.post("/api/comprehensive-report")
+async def generate_comprehensive_report(request: ComprehensiveReportRequest):
+    """
+    综合评估报告 - 包含人岗匹配 + 风险识别 + 潜力评估
+    """
+    try:
+        global person_job_fit_model
+        if person_job_fit_model is None:
+            person_job_fit_model = PersonJobFitModel(verbose=False)
+        
+        # 获取简历
+        data_manager = get_data_manager(project_root)
+        all_resumes = data_manager.get_all_resumes()
+        
+        target_resume = None
+        for r in all_resumes:
+            r_name = r.get('basic_info', {}).get('name', '') or r.get('candidate_id', '')
+            if r_name == request.resume_id:
+                target_resume = r
+                break
+        
+        if not target_resume:
+            raise HTTPException(status_code=404, detail=f"未找到候选人：{request.resume_id}")
+        
+        # 处理岗位画像
+        if request.job_description:
+            job_profile = person_job_fit_model.extract_job_profile(
+                job_description=request.job_description,
+                requirements=request.requirements,
+                save_path=None
+            )
+        else:
+            # 使用行业默认岗位
+            industry = target_resume.get('industry', '通用')
+            job_profile = None
+        
+        # 生成综合报告
+        report = person_job_fit_model.get_comprehensive_report(
+            resume=target_resume,
+            job_profile=job_profile,
+            include_charts=request.include_charts,
+            chart_save_dir=str(project_root / "backend" / "output" / "visualizations" / request.resume_id)
+        )
+        
+        return {
+            "status": "success",
+            "comprehensive_report": report
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"综合报告生成失败：{str(e)}")
+
+@app.get("/api/model/info")
+async def get_model_info():
+    """
+    获取模型信息
+    """
+    global person_job_fit_model
+    if person_job_fit_model is None:
+        person_job_fit_model = PersonJobFitModel(verbose=False)
+    
+    info = person_job_fit_model.get_model_info()
+    
+    return {
+        "status": "success",
+        "model_info": info
     }
 
 @app.get("/api/data/statistics")

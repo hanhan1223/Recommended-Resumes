@@ -1,0 +1,68 @@
+{
+  "metadata": {
+    "export_time": "2026-05-17T17:48:42.756323",
+    "n_results": 1
+  },
+  "data": {
+    "talent_type": "待观察",
+    "potential_score": 5.97,
+    "potential_comment": "各项指标表现一般，需要进一步观察和培养",
+    "dimension_scores": {
+      "career_continuity": 5.0,
+      "responsibility_growth": 8.0,
+      "project_complexity": 5.0,
+      "learning_ability": 5.0,
+      "company_platform_growth": 6.5
+    },
+    "details": {
+      "career_continuity_details": {
+        "n_positions": 1,
+        "has_promotion": false,
+        "promotion_count": 0,
+        "company_changes": 0,
+        "avg_tenure_years": 1.0,
+        "career_stability": "一般",
+        "score": 5.0
+      },
+      "responsibility_growth_details": {
+        "has_management_exp": true,
+        "max_team_size": 0,
+        "team_size_growth": false,
+        "scope_expansion": false,
+        "score": 8.0
+      },
+      "project_complexity_details": {
+        "n_projects": 0,
+        "has_large_project": false,
+        "technical_depth": "未知",
+        "score": 5.0
+      },
+      "learning_ability_details": {
+        "degree_improvement": false,
+        "n_certificates": 0,
+        "high_level_certs": 0,
+        "n_skills": 3,
+        "skill_diversity": "一般",
+        "learning_achievements": 0,
+        "score": 5.0
+      },
+      "company_platform_details": {
+        "has_platform_growth": false,
+        "avg_company_level": 3.0,
+        "max_company_level": 3,
+        "company_levels": [
+          3
+        ],
+        "score": 6.5
+      }
+    },
+    "weights": {
+      "career_continuity": 0.25,
+      "responsibility_growth": 0.25,
+      "project_complexity": 0.15,
+      "learning_ability": 0.2,
+      "company_platform": 0.15
+    },
+    "candidate_id": "测试候选人"
+  }
+}
