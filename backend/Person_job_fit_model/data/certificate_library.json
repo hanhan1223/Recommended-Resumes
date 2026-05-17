@@ -1,0 +1,286 @@
+{
+  "certificates": {
+    "通用": [
+      {
+        "name": "MBA",
+        "full_name": "工商管理硕士",
+        "level": 5,
+        "issuer": "教育部",
+        "category": "学历教育",
+        "validity": "永久有效"
+      },
+      {
+        "name": "EMBA",
+        "full_name": "高级管理人员工商管理硕士",
+        "level": 6,
+        "issuer": "教育部",
+        "category": "学历教育",
+        "validity": "永久有效"
+      },
+      {
+        "name": "PMP",
+        "full_name": "项目管理专业人士资格认证",
+        "level": 5,
+        "issuer": "PMI（美国项目管理协会）",
+        "category": "项目管理",
+        "validity": "3 年续证"
+      },
+      {
+        "name": "CPA",
+        "full_name": "注册会计师",
+        "level": 5,
+        "issuer": "中国注册会计师协会",
+        "category": "财务金融",
+        "validity": "永久有效"
+      },
+      {
+        "name": "CFA",
+        "full_name": "特许金融分析师",
+        "level": 5,
+        "issuer": "CFA Institute",
+        "category": "财务金融",
+        "validity": "永久有效"
+      },
+      {
+        "name": "法律职业资格",
+        "full_name": "国家统一法律职业资格考试",
+        "level": 5,
+        "issuer": "司法部",
+        "category": "法律",
+        "validity": "永久有效"
+      }
+    ],
+    "电商": [
+      {
+        "name": "阿里巴巴电商运营师",
+        "full_name": "阿里巴巴电商运营师认证",
+        "level": 3,
+        "issuer": "阿里巴巴集团",
+        "category": "电商运营",
+        "validity": "2 年续证"
+      },
+      {
+        "name": "Google Analytics 认证",
+        "full_name": "Google Analytics Individual Qualification",
+        "level": 3,
+        "issuer": "Google",
+        "category": "数据分析",
+        "validity": "1 年续证"
+      },
+      {
+        "name": "Facebook Blueprint 认证",
+        "full_name": "Facebook Blueprint Certification",
+        "level": 3,
+        "issuer": "Meta",
+        "category": "数字营销",
+        "validity": "1 年续证"
+      },
+      {
+        "name": "数据分析师",
+        "full_name": "数据分析师职业资格认证",
+        "level": 4,
+        "issuer": "中国商业联合会",
+        "category": "数据分析",
+        "validity": "3 年续证"
+      }
+    ],
+    "品牌": [
+      {
+        "name": "品牌管理师",
+        "full_name": "品牌管理师职业资格认证",
+        "level": 4,
+        "issuer": "中国品牌建设促进会",
+        "category": "品牌管理",
+        "validity": "3 年续证"
+      },
+      {
+        "name": "数字营销师",
+        "full_name": "数字营销师认证",
+        "level": 3,
+        "issuer": "中国广告协会",
+        "category": "数字营销",
+        "validity": "2 年续证"
+      },
+      {
+        "name": "广告师",
+        "full_name": "广告师职业资格认证",
+        "level": 3,
+        "issuer": "中国广告协会",
+        "category": "广告",
+        "validity": "3 年续证"
+      },
+      {
+        "name": "CMO 认证",
+        "full_name": "首席营销官认证",
+        "level": 5,
+        "issuer": "美国营销协会",
+        "category": "营销管理",
+        "validity": "3 年续证"
+      }
+    ],
+    "销售": [
+      {
+        "name": "销售管理师",
+        "full_name": "销售管理师职业资格认证",
+        "level": 3,
+        "issuer": "中国商业联合会",
+        "category": "销售管理",
+        "validity": "3 年续证"
+      },
+      {
+        "name": "谈判师",
+        "full_name": "商务谈判师认证",
+        "level": 3,
+        "issuer": "中国商业联合会",
+        "category": "商务谈判",
+        "validity": "3 年续证"
+      },
+      {
+        "name": "客户关系管理师",
+        "full_name": "客户关系管理师认证",
+        "level": 3,
+        "issuer": "中国商业联合会",
+        "category": "客户管理",
+        "validity": "3 年续证"
+      }
+    ],
+    "研发": [
+      {
+        "name": "系统架构师",
+        "full_name": "计算机技术与软件专业技术资格（水平）系统架构师",
+        "level": 5,
+        "issuer": "工信部",
+        "category": "软件技术",
+        "validity": "永久有效"
+      },
+      {
+        "name": "云计算认证",
+        "full_name": "AWS/Azure/阿里云云计算认证",
+        "level": 4,
+        "issuer": "AWS/Azure/阿里云",
+        "category": "云计算",
+        "validity": "2-3 年续证"
+      },
+      {
+        "name": "AI 工程师",
+        "full_name": "人工智能工程师认证",
+        "level": 4,
+        "issuer": "中国人工智能学会",
+        "category": "人工智能",
+        "validity": "3 年续证"
+      },
+      {
+        "name": "专利代理人",
+        "full_name": "专利代理师资格",
+        "level": 5,
+        "issuer": "国家知识产权局",
+        "category": "知识产权",
+        "validity": "永久有效"
+      },
+      {
+        "name": "Oracle 认证专家",
+        "full_name": "Oracle Certified Professional",
+        "level": 4,
+        "issuer": "Oracle",
+        "category": "数据库",
+        "validity": "永久有效"
+      }
+    ],
+    "生产": [
+      {
+        "name": "精益生产师",
+        "full_name": "精益生产师认证",
+        "level": 4,
+        "issuer": "中国质量协会",
+        "category": "生产管理",
+        "validity": "3 年续证"
+      },
+      {
+        "name": "六西格玛黑带",
+        "full_name": "Six Sigma Black Belt",
+        "level": 5,
+        "issuer": "ASQ/CAQ",
+        "category": "质量管理",
+        "validity": "3 年续证"
+      },
+      {
+        "name": "六西格玛绿带",
+        "full_name": "Six Sigma Green Belt",
+        "level": 4,
+        "issuer": "ASQ/CAQ",
+        "category": "质量管理",
+        "validity": "3 年续证"
+      },
+      {
+        "name": "质量管理师",
+        "full_name": "质量管理师职业资格认证",
+        "level": 4,
+        "issuer": "中国质量协会",
+        "category": "质量管理",
+        "validity": "3 年续证"
+      },
+      {
+        "name": "安全工程师",
+        "full_name": "注册安全工程师",
+        "level": 4,
+        "issuer": "应急管理部",
+        "category": "安全管理",
+        "validity": "5 年续证"
+      }
+    ],
+    "人力资源": [
+      {
+        "name": "人力资源管理师",
+        "full_name": "企业人力资源管理师",
+        "level": 4,
+        "issuer": "人社部",
+        "category": "人力资源",
+        "validity": "永久有效"
+      },
+      {
+        "name": "心理咨询师",
+        "full_name": "心理咨询师职业资格",
+        "level": 3,
+        "issuer": "中科院心理所",
+        "category": "心理咨询",
+        "validity": "永久有效"
+      },
+      {
+        "name": "薪酬管理师",
+        "full_name": "薪酬管理师认证",
+        "level": 3,
+        "issuer": "中国人力资源开发研究会",
+        "category": "薪酬绩效",
+        "validity": "3 年续证"
+      },
+      {
+        "name": "SHRM 认证",
+        "full_name": "Society for Human Resource Management Certification",
+        "level": 5,
+        "issuer": "SHRM",
+        "category": "人力资源",
+        "validity": "3 年续证"
+      }
+    ]
+  },
+  "metadata": {
+    "total_certificates": 37,
+    "categories": [
+      "通用",
+      "电商",
+      "品牌",
+      "销售",
+      "研发",
+      "生产",
+      "人力资源"
+    ],
+    "levels": {
+      "1-2": "初级证书",
+      "3": "中级证书",
+      "4": "高级证书",
+      "5-6": "专家级证书"
+    },
+    "created_at": "2026-05-17",
+    "version": "1.0.0"
+  }
+}

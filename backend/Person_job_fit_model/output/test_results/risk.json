@@ -1,0 +1,92 @@
+{
+  "metadata": {
+    "export_time": "2026-05-17T17:48:42.753862",
+    "n_results": 1
+  },
+  "data": {
+    "overall_risk_level": "高",
+    "overall_risk_score": 4.0,
+    "risk_comment": "存在多项高风险因素，建议谨慎评估",
+    "risk_factors": [
+      {
+        "type": "技能缺口",
+        "level": "高",
+        "score": 8,
+        "tag": "RISK_SKILL_GAP",
+        "description": "缺少4个核心技能，缺口率100%"
+      },
+      {
+        "type": "空窗期",
+        "level": "高",
+        "score": 8,
+        "tag": "RISK_EMPLOYMENT_GAP",
+        "description": "最长空窗期36.0个月，共1段"
+      }
+    ],
+    "risk_tags": [
+      "RISK_SKILL_GAP",
+      "RISK_EMPLOYMENT_GAP"
+    ],
+    "n_high_risks": 2,
+    "n_medium_risks": 0,
+    "details": {
+      "job_hopping_details": {
+        "n_jobs": 1,
+        "work_years": 5.0,
+        "jobs_per_5years": 1.0,
+        "avg_tenure_months": 60.0,
+        "risk_level": "低",
+        "risk_score": 2
+      },
+      "career_gap_details": {
+        "distinct_functions": 1,
+        "functions": [
+          "运营/电商"
+        ],
+        "all_positions": [
+          "运营经理"
+        ],
+        "risk_level": "低",
+        "risk_score": 2
+      },
+      "industry_switch_details": {
+        "distinct_industries": 1,
+        "industries": [
+          "电商"
+        ],
+        "resume_industry": "电商",
+        "risk_level": "低",
+        "risk_score": 2
+      },
+      "skill_gap_details": {
+        "required_skills_count": 4,
+        "candidate_skills_count": 3,
+        "missing_skills": [
+          "天猫",
+          "淘宝",
+          "数据分析优化及营销活动的策划",
+          "京东等电商平台运营规则"
+        ],
+        "gap_ratio": 1.0,
+        "risk_level": "高",
+        "risk_score": 8
+      },
+      "weak_achievement_details": {
+        "total_achievements": 0,
+        "quantified_achievements": 1,
+        "total_descriptions": 1,
+        "quantified_ratio": 1.0,
+        "risk_level": "低",
+        "risk_score": 2
+      },
+      "employment_gap_details": {
+        "max_gap_months": 36,
+        "total_gap_months": 36,
+        "n_gaps": 1,
+        "risk_level": "高",
+        "risk_score": 8
+      }
+    },
+    "candidate_id": "测试候选人"
+  }
+}
