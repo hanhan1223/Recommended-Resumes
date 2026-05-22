@@ -165,6 +165,116 @@
           <el-empty description="暂无分析数据" />
         </div>
       </el-card>
+
+      <!-- 风险评估卡片 -->
+      <el-card class="risk-card mt-20">
+        <template #header>
+          <div class="risk-header">
+            <span>⚠️ 风险评估</span>
+            <el-tag v-if="riskData" :type="getRiskLevelType(riskData.overall_risk_level)" effect="dark" size="small">
+              {{ riskData.overall_risk_level === '高' ? '高风险' : riskData.overall_risk_level === '中' ? '中风险' : '低风险' }}
+            </el-tag>
+          </div>
+        </template>
+
+        <div v-if="riskLoading" class="analysis-loading">
+          <el-skeleton :rows="4" animated />
+        </div>
+
+        <div v-else-if="riskData" class="risk-content">
+          <!-- 综合风险评分 -->
+          <div class="risk-score-box mb-20">
+            <div class="risk-score-circle" :class="'risk-' + riskData.overall_risk_level">
+              <span class="risk-score-value">{{ riskData.overall_risk_score }}</span>
+              <span class="risk-score-label">风险分</span>
+            </div>
+            <div class="risk-comment">
+              <h4>{{ riskData.risk_comment }}</h4>
+              <p>发现 {{ riskData.risk_factors?.length || 0 }} 个风险因素</p>
+            </div>
+          </div>
+
+          <!-- 风险因素列表 -->
+          <div v-if="riskData.risk_factors?.length" class="risk-factors-list">
+            <el-row :gutter="12">
+              <el-col :span="12" v-for="(factor, index) in riskData.risk_factors" :key="index">
+                <div class="risk-factor-item" :class="'risk-level-' + factor.level">
+                  <div class="risk-factor-header">
+                    <span class="risk-type">{{ factor.type }}</span>
+                    <el-tag :type="getRiskLevelType(factor.level)" size="small">{{ factor.level }}风险</el-tag>
+                  </div>
+                  <p class="risk-factor-desc">{{ factor.description }}</p>
+                </div>
+              </el-col>
+            </el-row>
+          </div>
+          <div v-else class="no-risk">
+            <el-icon color="#67C23A" :size="32"><CircleCheckFilled /></el-icon>
+            <p>未发现明显风险因素</p>
+          </div>
+        </div>
+
+        <div v-else class="analysis-empty">
+          <el-empty description="暂无风险评估数据" />
+        </div>
+      </el-card>
+
+      <!-- 潜力评估卡片 -->
+      <el-card class="potential-card mt-20">
+        <template #header>
+          <div class="potential-header">
+            <span>🚀 潜力评估</span>
+            <el-tag v-if="potentialData" type="success" effect="dark" size="small">
+              {{ potentialData.talent_type }}
+            </el-tag>
+          </div>
+        </template>
+
+        <div v-if="potentialLoading" class="analysis-loading">
+          <el-skeleton :rows="4" animated />
+        </div>
+
+        <div v-else-if="potentialData" class="potential-content">
+          <!-- 综合潜力评分 -->
+          <div class="potential-score-box mb-20">
+            <div class="potential-score-circle">
+              <span class="potential-score-value">{{ potentialData.potential_score }}</span>
+              <span class="potential-score-label">潜力分</span>
+            </div>
+            <div class="potential-comment">
+              <h4>{{ potentialData.talent_type }}</h4>
+              <p>{{ potentialData.potential_comment }}</p>
+            </div>
+          </div>
+
+          <!-- 潜力维度雷达图 -->
+          <el-row :gutter="20">
+            <el-col :span="12">
+              <v-chart :option="potentialRadarOption" autoresize style="height: 300px" />
+            </el-col>
+            <el-col :span="12">
+              <div class="potential-dimensions">
+                <div v-for="(score, key) in potentialData.dimension_scores" :key="key" class="potential-dim-item">
+                  <div class="dim-header">
+                    <span class="dim-name">{{ getPotentialDimName(key) }}</span>
+                    <span class="dim-score">{{ score.toFixed(2) }}</span>
+                  </div>
+                  <el-progress
+                    :percentage="(score / 10) * 100"
+                    :color="getScoreColor(score)"
+                    :stroke-width="10"
+                    striped
+                  />
+                </div>
+              </div>
+            </el-col>
+          </el-row>
+        </div>
+
+        <div v-else class="analysis-empty">
+          <el-empty description="暂无潜力评估数据" />
+        </div>
+      </el-card>
     </div>
 
     <div v-else class="loading-container">
@@ -188,6 +298,10 @@ const candidate = ref(null)
 const rank = ref(0)
 const analysisData = ref(null)
 const analysisLoading = ref(false)
+const riskData = ref(null)
+const riskLoading = ref(false)
+const potentialData = ref(null)
+const potentialLoading = ref(false)
 
 const dimensionNames = {
   education: '教育背景',
@@ -195,6 +309,52 @@ const dimensionNames = {
   skill_achievement: '技能成果',
   comprehensive: '综合素质'
 }
+
+const potentialDimNames = {
+  career_continuity: '职业发展连续性',
+  responsibility_growth: '职责提升轨迹',
+  project_complexity: '项目复杂度',
+  learning_ability: '学习能力',
+  company_platform_growth: '公司平台跃迁'
+}
+
+const getPotentialDimName = (key) => {
+  return potentialDimNames[key] || key
+}
+
+const getRiskLevelType = (level) => {
+  if (level === '高') return 'danger'
+  if (level === '中') return 'warning'
+  return 'success'
+}
+
+const potentialRadarOption = computed(() => ({
+  tooltip: {},
+  radar: {
+    indicator: [
+      { name: '职业发展连续性', max: 10 },
+      { name: '职责提升轨迹', max: 10 },
+      { name: '项目复杂度', max: 10 },
+      { name: '学习能力', max: 10 },
+      { name: '公司平台跃迁', max: 10 }
+    ]
+  },
+  series: [{
+    type: 'radar',
+    data: [{
+      value: [
+        potentialData.value?.dimension_scores?.career_continuity || 0,
+        potentialData.value?.dimension_scores?.responsibility_growth || 0,
+        potentialData.value?.dimension_scores?.project_complexity || 0,
+        potentialData.value?.dimension_scores?.learning_ability || 0,
+        potentialData.value?.dimension_scores?.company_platform_growth || 0
+      ],
+      name: '潜力得分',
+      areaStyle: { opacity: 0.3 },
+      lineStyle: { width: 2 }
+    }]
+  }]
+}))
 
 const dimensionColors = {
   education: '#667eea',
@@ -280,7 +440,26 @@ onMounted(async () => {
     await store.fetchRankings('电商', 10)
   }
 
-  const found = store.candidates.find(c => c.candidate_id === candidateId)
+  let found = store.candidates.find(c => c.candidate_id === candidateId)
+
+  // 如果没找到，尝试调用单份评分API
+  if (!found) {
+    try {
+      const scoreResult = await store.scoreResume(candidateId, store.currentIndustry || '电商')
+      if (scoreResult) {
+        found = {
+          candidate_id: scoreResult.candidate_id,
+          tci_score: scoreResult.tci_score,
+          dimensional_scores: scoreResult.dimensional_scores,
+          dimension_weights: scoreResult.dimension_weights,
+          penalty_applied: scoreResult.analysis?.penalty_applied || false
+        }
+      }
+    } catch (err) {
+      console.error('获取候选人评分失败:', err)
+    }
+  }
+
   if (found) {
     candidate.value = found
     const rankIndex = store.rankings.findIndex(r => r.candidate_id === candidateId)
@@ -301,6 +480,34 @@ onMounted(async () => {
     } finally {
       analysisLoading.value = false
     }
+
+    // 调用风险评估
+    riskLoading.value = true
+    try {
+      const riskResult = await store.assessRisk(candidateId)
+      if (riskResult.status === 'success' && riskResult.risk_assessment) {
+        riskData.value = riskResult.risk_assessment
+      }
+    } catch (err) {
+      console.error('风险评估失败:', err)
+    } finally {
+      riskLoading.value = false
+    }
+
+    // 调用潜力评估
+    potentialLoading.value = true
+    try {
+      const potentialResult = await store.evaluatePotential(candidateId)
+      if (potentialResult.status === 'success' && potentialResult.potential_evaluation) {
+        potentialData.value = potentialResult.potential_evaluation
+      }
+    } catch (err) {
+      console.error('潜力评估失败:', err)
+    } finally {
+      potentialLoading.value = false
+    }
+  } else {
+    console.error('未找到候选人:', candidateId)
   }
 })
 </script>
@@ -541,11 +748,183 @@ onMounted(async () => {
   margin-top: 16px;
 }
 
+.mb-20 {
+  margin-bottom: 20px;
+}
+
 .mt-20 {
   margin-top: 20px;
 }
 
 .loading-container {
   padding: 40px;
+}
+
+/* 风险评估样式 */
+.risk-header, .potential-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.risk-content, .potential-content {
+  padding: 10px 0;
+}
+
+.risk-score-box, .potential-score-box {
+  display: flex;
+  align-items: center;
+  gap: 30px;
+}
+
+.risk-score-circle {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+}
+
+.risk-score-circle.risk-高 {
+  background: linear-gradient(135deg, #f56c6c 0%, #ef5350 100%);
+}
+
+.risk-score-circle.risk-中 {
+  background: linear-gradient(135deg, #e6a23c 0%, #f5a623 100%);
+}
+
+.risk-score-circle.risk-低 {
+  background: linear-gradient(135deg, #67c23a 0%, #53d17a 100%);
+}
+
+.risk-score-value {
+  font-size: 36px;
+  font-weight: bold;
+}
+
+.risk-score-label {
+  font-size: 14px;
+}
+
+.risk-comment h4, .potential-comment h4 {
+  margin: 0 0 5px;
+  color: #2c3e50;
+  font-size: 18px;
+}
+
+.risk-comment p, .potential-comment p {
+  margin: 0;
+  color: #666;
+  font-size: 14px;
+}
+
+.risk-factor-item {
+  background: #fafafa;
+  padding: 16px;
+  border-radius: 10px;
+  margin-bottom: 12px;
+  border-left: 4px solid;
+}
+
+.risk-factor-item.risk-level-高 {
+  border-left-color: #f56c6c;
+}
+
+.risk-factor-item.risk-level-中 {
+  border-left-color: #e6a23c;
+}
+
+.risk-factor-item.risk-level-低 {
+  border-left-color: #67c23a;
+}
+
+.risk-factor-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.risk-type {
+  font-weight: 600;
+  color: #2c3e50;
+  font-size: 15px;
+}
+
+.risk-factor-desc {
+  margin: 0;
+  color: #666;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.no-risk {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 40px 0;
+}
+
+.no-risk p {
+  margin: 10px 0 0;
+  color: #67c23a;
+  font-size: 16px;
+}
+
+/* 潜力评估样式 */
+.potential-score-circle {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #409eff 0%, #53a8ff 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+}
+
+.potential-score-value {
+  font-size: 36px;
+  font-weight: bold;
+}
+
+.potential-score-label {
+  font-size: 14px;
+}
+
+.potential-dimensions {
+  padding: 10px 0;
+}
+
+.potential-dim-item {
+  padding: 12px 0;
+  border-bottom: 1px solid #eee;
+}
+
+.potential-dim-item:last-child {
+  border-bottom: none;
+}
+
+.dim-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.dim-header .dim-name {
+  font-weight: 600;
+  color: #2c3e50;
+  font-size: 14px;
+}
+
+.dim-header .dim-score {
+  font-weight: bold;
+  color: #409eff;
+  font-size: 16px;
 }
 </style>

@@ -379,7 +379,7 @@ class DimensionalScoringModel:
         获取候选人排名
 
         Returns:
-            排名列表
+            排名列表，包含TCI分数和维度得分
         """
         if not self.results:
             raise ValueError("请先调用 calculate() 方法")
@@ -395,7 +395,13 @@ class DimensionalScoringModel:
                 "rank": i,
                 "candidate_id": c["candidate_id"],
                 "tci_score": c["tci_score"],
-                "penalty_applied": c["penalty_applied"]
+                "penalty_applied": c["penalty_applied"],
+                "dimensional_scores": c.get("dimensional_scores", {
+                    "education": 0,
+                    "experience": 0,
+                    "skill_achievement": 0,
+                    "comprehensive": 0
+                })
             }
             for i, c in enumerate(ranking, 1)
         ]

@@ -12,6 +12,7 @@ build/
 .venv/
 venv/
 env/
+ENV/
 
 # IDE
 .idea/
@@ -20,8 +21,9 @@ env/
 *.swo
 *~
 
-# Claude Code
+# Claude Code / AI Assistant
 .claude/
+.trae/
 
 # OS
 .DS_Store
@@ -31,18 +33,59 @@ Thumbs.db
 .pytest_cache/
 .coverage
 htmlcov/
+.tox/
 
 # Node
 node_modules/
 frontend/dist/
+frontend/build/
 
 # Temp & Cache
 backend/temp/
+backend/cache/
 *.log
+*.tmp
 
-# Uploaded files
+# Uploaded files (user data)
 backend/uploads/
+
+# Output files (generated reports)
+backend/output/exports/
+backend/Person_job_fit_model/output/test_results/
+backend/Person_job_fit_model/output/test_visualizations/
+Dynamic_Industry_Weight_Matrix/output/
+Resume_Recognition_Model/output/*.txt
+Resume_Recognition_Model/output/lj_*.json
+
+# Debug & Test files
+*.bat
+*.ps1
+analyze_*.py
+check_*.py
+cleanup_*.py
+clear_*.py
+debug_*.py
+diagnose_*.py
+extract_*.py
+fix_*.py
+query
+test_*.py
+auto_fix_*.py
+quick_*.py
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
 
 # Environment variables
 .env
 .env.local
+.env.*.local
+
+# Config files with sensitive data
+backend/config.json
+
+# Misc
+*.bak
+*.orig

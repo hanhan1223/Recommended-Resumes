@@ -33,6 +33,15 @@
               <el-menu-item index="/qa">
                 <el-icon><ChatDotRound /></el-icon>问答
               </el-menu-item>
+              <el-menu-item index="/comparison">
+                <el-icon><ScaleToOriginal /></el-icon>对比
+              </el-menu-item>
+              <el-menu-item index="/recommendation">
+                <el-icon><List /></el-icon>推荐
+              </el-menu-item>
+              <el-menu-item index="/decision">
+                <el-icon><DocumentChecked /></el-icon>决策
+              </el-menu-item>
             </el-menu>
           </div>
         </div>
@@ -58,6 +67,7 @@
 <script setup>
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
+import { Document, HomeFilled, UploadFilled, Trophy, DataAnalysis, ChatDotRound, ScaleToOriginal, List, DocumentChecked } from '@element-plus/icons-vue'
 
 const route = useRoute()
 const activeRoute = computed(() => route.path)

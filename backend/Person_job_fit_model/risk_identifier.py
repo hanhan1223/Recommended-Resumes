@@ -118,15 +118,35 @@ class RiskIdentifier:
                 'risk_level': "低"
             }
 
-        n_jobs = len(work_experiences)
-        work_years = work_duration_months / 12.0 if work_duration_months > 0 else n_jobs * 2
+        # 步骤1: 去重工作经历
+        unique_experiences = self._deduplicate_work_experiences(work_experiences)
+        n_jobs = len(unique_experiences)
 
-        # 计算最近 5 年的跳槽次数
+        # 步骤2: 按时间排序
+        sorted_experiences = self._sort_work_experiences_by_time(unique_experiences)
+
+        # 步骤3: 计算工作年限（基于最早和最晚的工作时间）
+        if sorted_experiences:
+            first_start = self._get_start_date(sorted_experiences[0])
+            last_end = self._get_end_date(sorted_experiences[-1])
+            total_months = (last_end[0] - first_start[0]) * 12 + (last_end[1] - first_start[1])
+            work_years = total_months / 12.0
+        else:
+            work_years = work_duration_months / 12.0 if work_duration_months > 0 else n_jobs * 2
+
+        # 步骤4: 计算跳槽次数（工作段数 - 1）
+        job_changes = max(0, n_jobs - 1)
+
+        # 步骤5: 计算最近5年的跳槽次数
         recent_years = min(work_years, 5)
-        jobs_per_5years = n_jobs / max(recent_years, 1) * 5
+        jobs_per_5years = job_changes / max(recent_years, 1) * 5 if recent_years > 0 else 0
 
-        # 计算平均任期
-        avg_tenure_months = work_duration_months / n_jobs if n_jobs > 0 else 0
+        # 步骤6: 计算平均任期（总时长 / 工作段数）
+        if work_duration_months > 0:
+            avg_tenure_months = work_duration_months / n_jobs if n_jobs > 0 else 0
+        else:
+            # 基于时间范围计算
+            avg_tenure_months = total_months / n_jobs if n_jobs > 0 else 0
 
         # 风险评估
         risk_level = "低"
@@ -145,8 +165,9 @@ class RiskIdentifier:
 
         details = {
             'n_jobs': n_jobs,
+            'job_changes': job_changes,
             'work_years': round(work_years, 1),
-            'jobs_per_5years': round(jobs_per_5years, 2),
+            'jobs_per_5years': round(jobs_per_5years, 1),
             'avg_tenure_months': round(avg_tenure_months, 1),
             'risk_level': risk_level,
             'risk_score': risk_score
@@ -311,15 +332,28 @@ class RiskIdentifier:
 
             missing_skills = required_skills - candidate_skills
             gap_ratio = len(missing_skills) / len(required_skills) if required_skills else 0
+            missing_skills_count = len(missing_skills)
         else:
             # 无岗位要求，基于技能数量判断
-            required_skills = set()
-            missing_skills = set()
-            gap_ratio = 0
+            # 设定一个基准技能数量（假设需要至少5个核心技能）
+            baseline_skills = 5
 
-            # 如果技能太少，认为有风险
+            # 计算缺少的技能数量和缺口率（统一使用基准值作为分母）
             if len(candidate_skills) < 3:
-                gap_ratio = 0.5
+                # 技能太少，按基准值计算
+                missing_skills_count = baseline_skills - len(candidate_skills)
+                gap_ratio = missing_skills_count / baseline_skills
+                missing_skills = {f'核心技能(估算缺少{missing_skills_count}个)'}
+            elif len(candidate_skills) < baseline_skills:
+                missing_skills_count = baseline_skills - len(candidate_skills)
+                gap_ratio = missing_skills_count / baseline_skills
+                missing_skills = {f'核心技能(估算缺少{missing_skills_count}个)'}
+            else:
+                missing_skills_count = 0
+                gap_ratio = 0
+                missing_skills = set()
+
+            required_skills = set([f'核心技能_{i}' for i in range(baseline_skills)])  # 用于显示的基准技能
 
         # 风险评估
         risk_level = "低"
@@ -337,7 +371,8 @@ class RiskIdentifier:
         details = {
             'required_skills_count': len(required_skills),
             'candidate_skills_count': len(candidate_skills),
-            'missing_skills': list(missing_skills)[:10],
+            'missing_skills_count': missing_skills_count,
+            'missing_skills': list(missing_skills)[:10] if missing_skills else [],
             'gap_ratio': round(gap_ratio, 2),
             'risk_level': risk_level,
             'risk_score': risk_score
@@ -439,26 +474,8 @@ class RiskIdentifier:
             total_gap = sum(gap.get('duration_months', 0) for gap in gap_periods)
             n_gaps = len(gap_periods)
         else:
-            # 简单估算：从工作时间推断
-            # 假设简历覆盖了从第一份工作到现在的时间
-            work_duration = resume.get('work_duration_months', 0)
-
-            # 计算工作经历的总时长
-            total_work_months = 0
-            for exp in work_experiences:
-                time_period = exp.get('time_period', '')
-                # 这里简化处理，实际应该解析时间
-                total_work_months += 24  # 假设平均每份工作时间
-
-            # 空窗期 = 总时长 - 工作时长
-            if work_duration > 0:
-                estimated_gap = max(0, work_duration - total_work_months)
-            else:
-                estimated_gap = 0
-
-            max_gap = estimated_gap
-            total_gap = estimated_gap
-            n_gaps = 1 if estimated_gap > 3 else 0
+            # 正确计算空窗期
+            max_gap, total_gap, n_gaps = self._calculate_gap_periods(work_experiences)
 
         # 风险评估
         risk_level = "低"
@@ -482,6 +499,208 @@ class RiskIdentifier:
         }
 
         return risk_level, risk_score, details
+
+    def _parse_date(self, date_str: str) -> Tuple[int, int]:
+        """
+        解析日期字符串为(年, 月)
+
+        Args:
+            date_str: 日期字符串，如 '2020/03', '2020-03', '2023.03', '至今'
+
+        Returns:
+            (年, 月) 元组
+        """
+        date_str = date_str.strip()
+
+        # 处理特殊情况
+        if date_str in ['至今', '现在', 'Present', 'present']:
+            now = datetime.now()
+            return (now.year, now.month)
+
+        # 处理 2023.03 这样的格式
+        if '.' in date_str:
+            parts = date_str.split('.')
+            try:
+                return (int(parts[0]), int(parts[1]))
+            except:
+                pass
+
+        # 处理 2002/03 或 2002-03 格式
+        for sep in ['/', '-']:
+            if sep in date_str:
+                parts = date_str.split(sep)
+                try:
+                    return (int(parts[0]), int(parts[1]))
+                except:
+                    pass
+
+        # 无法解析，返回当前日期
+        now = datetime.now()
+        return (now.year, now.month)
+
+    def _calculate_gap_periods(self, work_experiences: List[Dict]) -> Tuple[float, float, int]:
+        """
+        计算工作经历之间的空窗期
+
+        Args:
+            work_experiences: 工作经历列表
+
+        Returns:
+            (最大空窗月数, 总空窗月数, 空窗期次数)
+        """
+        if not work_experiences:
+            return 0, 0, 0
+
+        # 步骤1: 去除重复的工作经历
+        unique_experiences = self._deduplicate_work_experiences(work_experiences)
+
+        # 步骤2: 按开始时间排序
+        sorted_experiences = self._sort_work_experiences_by_time(unique_experiences)
+
+        # 步骤3: 计算相邻工作之间的空窗期
+        gap_periods = []
+        for i in range(len(sorted_experiences) - 1):
+            current_exp = sorted_experiences[i]
+            next_exp = sorted_experiences[i + 1]
+
+            current_end = self._parse_date(current_exp.get('end_date', current_exp.get('time_period', '').split('-')[-1] if '-' in current_exp.get('time_period', '') else '至今'))
+            next_start = self._parse_date(next_exp.get('start_date', next_exp.get('time_period', '').split('-')[0] if '-' in next_exp.get('time_period', '') else '至今'))
+
+            # 计算间隔月数
+            if current_end[0] > next_start[0] or (current_end[0] == next_start[0] and current_end[1] > next_start[1]):
+                # 工作时间重叠（不视为空窗）
+                continue
+
+            gap_months = (next_start[0] - current_end[0]) * 12 + (next_start[1] - current_end[1])
+
+            # 只计入超过1个月的有效空窗期
+            if gap_months > 1:
+                gap_periods.append({
+                    'from': current_exp.get('company', ''),
+                    'to': next_exp.get('company', ''),
+                    'duration_months': gap_months
+                })
+
+        if not gap_periods:
+            return 0, 0, 0
+
+        max_gap = max(g['duration_months'] for g in gap_periods)
+        total_gap = sum(g['duration_months'] for g in gap_periods)
+        n_gaps = len(gap_periods)
+
+        return max_gap, total_gap, n_gaps
+
+    def _deduplicate_work_experiences(self, work_experiences: List[Dict]) -> List[Dict]:
+        """
+        去除重复的工作经历
+
+        Args:
+            work_experiences: 工作经历列表
+
+        Returns:
+            去重后的工作经历列表
+        """
+        seen = set()
+        unique_experiences = []
+
+        for exp in work_experiences:
+            # 创建唯一标识：开始时间 + 公司名（忽略副职标记）
+            company = exp.get('company', '')
+            start = exp.get('start_date', '')
+
+            if not start:
+                # 如果没有开始时间，尝试从time_period中提取
+                time_period = exp.get('time_period', '')
+                if '-' in time_period:
+                    start = time_period.split('-')[0].strip()
+                elif '至' in time_period:
+                    start = time_period.split('至')[0].strip()
+
+            # 清理公司名（去除空格和特殊字符）
+            company_key = ''.join(company.split())
+
+            # 唯一标识
+            key = (start, company_key)
+
+            if key not in seen:
+                seen.add(key)
+                unique_experiences.append(exp)
+
+        return unique_experiences
+
+    def _sort_work_experiences_by_time(self, work_experiences: List[Dict]) -> List[Dict]:
+        """
+        按开始时间排序工作经历
+
+        Args:
+            work_experiences: 工作经历列表
+
+        Returns:
+            按时间排序后的工作经历列表
+        """
+        def get_start_tuple(exp):
+            time_period = exp.get('time_period', '')
+            start_str = ''
+
+            if exp.get('start_date'):
+                start_str = exp.get('start_date')
+            elif '-' in time_period:
+                start_str = time_period.split('-')[0].strip()
+            elif '至' in time_period:
+                start_str = time_period.split('至')[0].strip()
+
+            year, month = self._parse_date(start_str)
+            return (year, month)
+
+        return sorted(work_experiences, key=get_start_tuple)
+
+    def _get_start_date(self, exp: Dict) -> Tuple[int, int]:
+        """
+        获取工作经历的开始日期
+
+        Args:
+            exp: 工作经历字典
+
+        Returns:
+            (年, 月) 元组
+        """
+        time_period = exp.get('time_period', '')
+        start_str = ''
+
+        if exp.get('start_date'):
+            start_str = exp.get('start_date')
+        elif '-' in time_period:
+            start_str = time_period.split('-')[0].strip()
+        elif '至' in time_period:
+            start_str = time_period.split('至')[0].strip()
+
+        return self._parse_date(start_str)
+
+    def _get_end_date(self, exp: Dict) -> Tuple[int, int]:
+        """
+        获取工作经历的结束日期
+
+        Args:
+            exp: 工作经历字典
+
+        Returns:
+            (年, 月) 元组
+        """
+        time_period = exp.get('time_period', '')
+        end_str = ''
+
+        if exp.get('end_date'):
+            end_str = exp.get('end_date')
+        elif '-' in time_period:
+            parts = time_period.split('-')
+            if len(parts) > 1:
+                end_str = parts[-1].strip()
+        elif '至' in time_period:
+            parts = time_period.split('至')
+            if len(parts) > 1:
+                end_str = parts[-1].strip()
+
+        return self._parse_date(end_str)
 
     def identify(self, resume: Dict, job_profile: Optional[Dict] = None) -> Dict:
         """
@@ -548,12 +767,19 @@ class RiskIdentifier:
 
         # 技能缺口风险
         if skill_gap_level in ["高", "中"]:
+            # 生成技能缺口描述（使用missing_skills_count确保一致性）
+            missing_count = skill_gap_details.get('missing_skills_count', len(skill_gap_details['missing_skills']))
+            if missing_count > 0:
+                gap_estimate_str = f"缺少{missing_count}个"
+            else:
+                gap_estimate_str = "储备不足"
+
             risk_factors.append({
                 'type': '技能缺口',
                 'level': skill_gap_level,
                 'score': skill_gap_score,
                 'tag': self.RISK_SKILL_GAP,
-                'description': f"缺少{len(skill_gap_details['missing_skills'])}个核心技能，缺口率{skill_gap_details['gap_ratio']:.0%}"
+                'description': f"技能{gap_estimate_str}，缺口率{skill_gap_details['gap_ratio']:.0%}"
             })
             risk_tags.append(self.RISK_SKILL_GAP)
 

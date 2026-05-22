@@ -79,7 +79,7 @@ def get_redis():
 def init_database():
     """创建所有表"""
     Base.metadata.create_all(bind=engine)
-    print("✅ 数据库表创建完成")
+    print("数据库表创建完成")
 
 if __name__ == "__main__":
     init_database()
