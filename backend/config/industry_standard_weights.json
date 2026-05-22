@@ -1,0 +1,43 @@
+{
+  "description": "行业标准维度权重配置",
+  "version": "1.0",
+  "formula": "TCI = Wedu·Sedu + Wexp·Sexp + Wskill·Sskill + Wadj·Sadj",
+  "industries": {
+    "电商": {
+      "education": 0.10,
+      "experience": 0.30,
+      "skill_achievement": 0.40,
+      "comprehensive": 0.20
+    },
+    "研发": {
+      "education": 0.20,
+      "experience": 0.30,
+      "skill_achievement": 0.40,
+      "comprehensive": 0.10
+    },
+    "销售": {
+      "education": 0.10,
+      "experience": 0.35,
+      "skill_achievement": 0.40,
+      "comprehensive": 0.15
+    },
+    "品牌": {
+      "education": 0.15,
+      "experience": 0.30,
+      "skill_achievement": 0.35,
+      "comprehensive": 0.20
+    },
+    "生产": {
+      "education": 0.15,
+      "experience": 0.35,
+      "skill_achievement": 0.35,
+      "comprehensive": 0.15
+    },
+    "人力资源": {
+      "education": 0.15,
+      "experience": 0.30,
+      "skill_achievement": 0.35,
+      "comprehensive": 0.20
+    }
+  }
+}

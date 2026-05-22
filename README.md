@@ -83,16 +83,36 @@ pip install -r requirements.txt
 
 #### 3. 配置 LLM API（可选）
 
+**方式一：使用环境变量（推荐，更安全）**
+
+```bash
+# Linux/Mac
+export DASHSCOPE_API_KEY="your-dashscope-api-key"
+
+# Windows PowerShell
+$env:DASHSCOPE_API_KEY="your-dashscope-api-key"
+```
+
+**方式二：使用配置文件**
+
+复制模板文件并编辑：
+
+```bash
+cp backend/config.json.template backend/config.json
+```
+
 编辑 `backend/config.json`，填入通义千问 API Key：
 
 ```json
 {
   "llm": {
     "api_key": "your-dashscope-api-key",
-    "model": "qwen3.5-flash"
+    "model": "qwen3.6-flash"
   }
 }
 ```
+
+⚠️ **注意**：`backend/config.json` 已被添加到 `.gitignore`，不会被提交到代码仓库。
 
 #### 4. 启动后端服务
 

@@ -64,6 +64,11 @@ export const useResumeStore = defineStore('resume', () => {
         rankings.value = response.data.ranking || []
         currentIndustry.value = industry
 
+        // 同时保存完整的candidate数据
+        if (response.data.candidates && response.data.candidates.length > 0) {
+          candidates.value = response.data.candidates
+        }
+
         if (rankings.value.length === 0) {
           error.value = '该行业暂无候选人数据，请先上传并解析简历'
         }
@@ -209,6 +214,104 @@ export const useResumeStore = defineStore('resume', () => {
     }
   }
 
+  // 岗位画像抽取
+  const parseJobProfile = async (jobDescription, requirements = '') => {
+    try {
+      const response = await axios.post(`${API_BASE}/job-profile/parse`, {
+        job_description: jobDescription,
+        requirements: requirements
+      })
+      return response.data
+    } catch (err) {
+      console.error('岗位画像抽取失败:', err)
+      throw err
+    }
+  }
+
+  // 人岗匹配评分
+  const scoreJobMatching = async (resumeId, jobDescription = '', jobProfile = null) => {
+    try {
+      const payload = {
+        resume_id: resumeId,
+        include_details: true
+      }
+      if (jobProfile) {
+        payload.job_profile = jobProfile
+      } else if (jobDescription) {
+        payload.job_description = jobDescription
+      }
+      const response = await axios.post(`${API_BASE}/matching/score`, payload)
+      return response.data
+    } catch (err) {
+      console.error('人岗匹配评分失败:', err)
+      throw err
+    }
+  }
+
+  // 批量人岗匹配评分
+  const batchJobMatching = async (resumeIds, jobDescription = '', jobProfile = null) => {
+    try {
+      const payload = {
+        resume_ids: resumeIds,
+        include_details: true
+      }
+      if (jobProfile) {
+        payload.job_profile = jobProfile
+      } else if (jobDescription) {
+        payload.job_description = jobDescription
+      }
+      const response = await axios.post(`${API_BASE}/matching/batch`, payload)
+      return response.data
+    } catch (err) {
+      console.error('批量人岗匹配评分失败:', err)
+      throw err
+    }
+  }
+
+  // 风险识别评估
+  const assessRisk = async (resumeId, jobProfile = null) => {
+    try {
+      const payload = { resume_id: resumeId }
+      if (jobProfile) {
+        payload.job_profile = jobProfile
+      }
+      const response = await axios.post(`${API_BASE}/risk/assessment`, payload)
+      return response.data
+    } catch (err) {
+      console.error('风险评估失败:', err)
+      throw err
+    }
+  }
+
+  // 潜力评估
+  const evaluatePotential = async (resumeId) => {
+    try {
+      const response = await axios.post(`${API_BASE}/potential/evaluation`, {
+        resume_id: resumeId
+      })
+      return response.data
+    } catch (err) {
+      console.error('潜力评估失败:', err)
+      throw err
+    }
+  }
+
+  // 综合评估报告
+  const getComprehensiveReport = async (resumeId, jobDescription = '', requirements = '') => {
+    try {
+      const payload = { resume_id: resumeId }
+      if (jobDescription) {
+        payload.job_description = jobDescription
+        payload.requirements = requirements
+      }
+      const response = await axios.post(`${API_BASE}/comprehensive-report`, payload)
+      return response.data
+    } catch (err) {
+      console.error('综合报告获取失败:', err)
+      throw err
+    }
+  }
+
   return {
     // State
     industries,
@@ -229,6 +332,12 @@ export const useResumeStore = defineStore('resume', () => {
     parseResume,
     generateReport,
     askQuestion,
-    analyzeCandidate
+    analyzeCandidate,
+    parseJobProfile,
+    scoreJobMatching,
+    batchJobMatching,
+    assessRisk,
+    evaluatePotential,
+    getComprehensiveReport
   }
 })

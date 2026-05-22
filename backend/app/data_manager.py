@@ -30,14 +30,27 @@ class ResumeDataManager:
         """加载所有简历数据"""
         try:
             with open(self.data_file, 'r', encoding='utf-8') as f:
-                return json.load(f)
+                data = json.load(f)
+                # 处理不同的JSON格式
+                if isinstance(data, list):
+                    return data
+                elif isinstance(data, dict) and 'resumes' in data:
+                    # 处理 {"resumes": [...], ...} 格式
+                    return data.get('resumes', [])
+                else:
+                    return []
         except (FileNotFoundError, json.JSONDecodeError):
             return []
     
     def _save_data(self, data: List[Dict]):
         """保存数据到文件"""
+        # 保存为 {"resumes": [...], ...} 格式
         with open(self.data_file, 'w', encoding='utf-8') as f:
-            json.dump(data, f, ensure_ascii=False, indent=2)
+            json.dump({
+                'resumes': data,
+                'total': len(data),
+                'parsed_at': datetime.now().isoformat()
+            }, f, ensure_ascii=False, indent=2)
     
     def add_resume(self, resume_data: Dict) -> bool:
         """

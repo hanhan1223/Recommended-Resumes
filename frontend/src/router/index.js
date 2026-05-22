@@ -36,6 +36,24 @@ const routes = [
     name: 'CandidateDetail',
     component: () => import('@/views/CandidateDetail.vue'),
     meta: { title: '候选人详情' }
+  },
+  {
+    path: '/comparison',
+    name: 'Comparison',
+    component: () => import('@/views/Comparison.vue'),
+    meta: { title: '候选人对比' }
+  },
+  {
+    path: '/recommendation',
+    name: 'Recommendation',
+    component: () => import('@/views/Recommendation.vue'),
+    meta: { title: '方案推荐' }
+  },
+  {
+    path: '/decision',
+    name: 'Decision',
+    component: () => import('@/views/Decision.vue'),
+    meta: { title: '决策报告' }
   }
 ]
 

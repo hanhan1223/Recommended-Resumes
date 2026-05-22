@@ -95,8 +95,9 @@ class ResumeParser:
     def _init_entity_patterns(self):
         """初始化实体识别规则"""
         self.time_patterns = [
-            (r'(\d{4})[-/](\d{1,2})[-/](\d{1,2})', 'YMD'),
+            # 修复：优先匹配YM模式（两段日期），避免YMD模式误匹配
             (r'(\d{4})[-/](\d{1,2})', 'YM'),
+            (r'(\d{4})[-/](\d{1,2})[-/](\d{1,2})', 'YMD'),
             (r'(\d{4}) 年 (\d{1,2}) 月 (\d{1,2}) 日', 'YMD_CN'),
             (r'(\d{4}) 年 (\d{1,2}) 月', 'YM_CN'),
             (r'(\d{4}) 年', 'Y_CN'),
@@ -113,16 +114,23 @@ class ResumeParser:
     def _init_industry_keywords(self):
         """初始化行业关键词"""
         self.industry_keywords = {
-            '电商': [
-                '电商', '淘宝', '天猫', '京东', '拼多多', '抖音电商', '快手电商',
-                '电子商务', '电商运营', '店铺运营', '网店', '线上销售',
-                'GMV', 'ROI', '转化率', '客单价', '流量', '直通车', '钻展',
-                '跨境电商', '亚马逊', 'eBay', '独立站', '直播运营'
+            '研发': [
+                '研发', '研究', '开发', '技术', '实验', '测试', '专利',
+                '工程师', '科学家', '博士', '硕士', '技术创新',
+                '产品设计', '配方', '工艺研发', '技术研发',
+                '论文', '发明专利', '实用新型', 'SCI', '核心期刊',
+                '首席科学家', '研究院', '研发总监', '技术总监', 'CTO',
+                '架构师', '程序员', 'coding', 'programming',
+                'Java', 'Python', 'C++', 'Go', 'Rust', '前端', '后端', '全栈',
+                '软件工程', '算法', '数据结构', '系统设计'
             ],
-            '人力资源': [
-                '人力资源', 'HR', '招聘', '培训', '薪酬', '绩效', '员工关系',
-                'HRBP', 'COE', 'SSC', '猎头', '简历', '面试', '背调',
-                '组织发展', '人才发展', '企业文化', '人力资源规划', 'HRD'
+            '销售': [
+                '销售', '销售渠道', '代理商', '经销商',
+                '大客户', '区域销售', '销售代表', '销售经理', '销售总监',
+                '业绩', '回款', '签单', '合同', '订单',
+                '外贸', '海外销售', '国际贸易', '出口', '业务员',
+                '客户', '签单', '商务', 'BD', 'business development',
+                '客户经理', '销售团队', '渠道管理', '商务拓展'
             ],
             '品牌': [
                 '品牌', '品牌推广', '品牌管理', '品牌总监', '市场总监',
@@ -136,29 +144,26 @@ class ResumeParser:
                 '厂长', '生产总监', '生产经理', '车间主任',
                 '产能', '良率', '合格率', '生产效率', '副厂长'
             ],
-            '研发': [
-                '研发', '研究', '开发', '技术', '实验', '测试', '专利',
-                '工程师', '科学家', '博士', '硕士', '技术创新',
-                '产品设计', '配方', '工艺研发', '技术研发',
-                '论文', '发明专利', '实用新型', 'SCI', '核心期刊',
-                '首席科学家', '研究院', '研发总监'
+            '人力资源': [
+                '人力资源', 'HR', '招聘', '培训', '薪酬', '绩效', '员工关系',
+                'HRBP', 'COE', 'SSC', '猎头', '简历', '面试', '背调',
+                '组织发展', '人才发展', '企业文化', '人力资源规划', 'HRD'
             ],
-            '销售': [
-                '销售', '销售渠道', '代理商', '经销商',
-                '大客户', '区域销售', '销售代表', '销售经理', '销售总监',
-                '业绩', '回款', '签单', '合同', '订单',
-                '外贸', '海外销售', '国际贸易', '出口', '业务员',
-                '客户', '签单'
+            '电商': [
+                '电商', '淘宝', '天猫', '京东', '拼多多', '抖音电商', '快手电商',
+                '电子商务', '电商运营', '店铺运营', '网店', '线上销售',
+                'GMV', 'ROI', '转化率', '客单价', '流量', '直通车', '钻展',
+                '跨境电商', '亚马逊', 'eBay', '独立站', '直播运营'
             ]
         }
 
         self.high_priority_keywords = {
-            '电商': ['电商', '电子商务', '淘宝', '天猫', '京东', '拼多多', 'GMV', '直播运营'],
-            '人力资源': ['HR', 'HRBP', 'HRD', '招聘', '薪酬', '绩效'],
-            '品牌': ['品牌总监', '市场总监', 'CMO', '品牌经理', '品牌推广'],
+            '研发': ['研发总监', '首席科学家', '研究院', '博士', '博士后', '研究员', '技术总监', 'CTO', '架构师', '工程师', '开发', 'Java', 'Python', '前端', '后端'],
+            '销售': ['销售总监', '销售经理', '客户经理', '外贸', '代理商', '经销商', '签单', '回款', '商务总监', 'BD'],
+            '品牌': ['品牌总监', '市场总监', 'CMO', '品牌经理', '品牌推广', '品牌运营', '市场运营'],
             '生产': ['厂长', '生产总监', '副厂长', '车间主任', '精益生产'],
-            '研发': ['研发总监', '首席科学家', '研究院', '博士', '博士后', '研究员'],
-            '销售': ['销售总监', '外贸', '代理商', '经销商', '签单', '回款']
+            '人力资源': ['HR', 'HRBP', 'HRD', '招聘', '薪酬', '绩效', '人力资源总监'],
+            '电商': ['电商', '电子商务', '淘宝', '天猫', '京东', '拼多多', 'GMV']
         }
 
     def read_file(self, file_path: str) -> str:
@@ -370,14 +375,40 @@ class ResumeParser:
 
     def read_docx(self, file_path: str) -> str:
         """
-        读取 docx 文件
+        读取 docx 文件（包括段落和表格）
         :param file_path: 文件路径
         :return: 简历文本内容
         """
         try:
             doc = Document(file_path)
+
+            # 1. 读取段落
             paragraphs = [p.text for p in doc.paragraphs if p.text.strip()]
+
+            # 2. 读取表格（关键修复！）
+            if doc.tables:
+                paragraphs.append('\n\n=== 表格数据开始 ===\n')
+
+                # 遍历所有表格
+                for table_idx, table in enumerate(doc.tables):
+                    if len(table.rows) > 1:  # 只处理有内容的表格
+                        paragraphs.append(f'\n--- 表格 {table_idx + 1} ---\n')
+
+                        # 遍历表格的每一行
+                        for row_idx, row in enumerate(table.rows):
+                            # 提取单元格文本
+                            cells = [cell.text.strip() for cell in row.cells]
+                            # 用制表符连接每个单元格
+                            row_text = '\t'.join(cells)
+
+                            # 只添加非空行
+                            if any(cell for cell in cells):
+                                paragraphs.append(row_text)
+
+                paragraphs.append('\n=== 表格数据结束 ===\n')
+
             return '\n'.join(paragraphs)
+
         except Exception as e:
             raise Exception(f"读取文件失败：{file_path}, 错误：{e}")
 
@@ -399,6 +430,9 @@ class ResumeParser:
     def extract_time_to_months(self, time_str: str) -> Optional[float]:
         """提取时间并转换为月数"""
         time_str = time_str.strip()
+
+        # 关键修复：统一时间分隔符（处理2022/04-2023.03这样的混合格式）
+        time_str = time_str.replace('.', '/')
 
         if any(word in time_str for word in ['至今', '当前', 'present', 'Present']):
             end_date = datetime.now()
@@ -684,43 +718,99 @@ class ResumeParser:
 
     def identify_industry(self, text: str, file_path: str = "") -> str:
         """识别简历所属行业"""
+        # 优先级1：从文件路径中查找
         if file_path:
             path_parts = file_path.replace('\\', '/').split('/')
             for part in path_parts:
-                if part in ['人力资源', '品牌', '生产', '电商', '研发', '销售', '电商 2']:
+                if part in ['人力资源', '品牌', '品牌市场', '生产', '电商', '研发', '销售', '电商 2']:
                     if part == '电商 2':
                         return '电商'
+                    if part == '品牌市场':
+                        return '品牌'
                     return part
 
+        # 优先级2：从文件名中查找
         if file_path:
             file_name = file_path.split('\\')[-1] if '\\' in file_path else file_path
-            for_match = re.search(r'-for\s*([^\uff08]+)', file_name)
+            file_name_lower = file_name.lower()
+
+            # 改进的文件名行业识别 - 支持 for- 和 -for 两种格式
+            for_match = re.search(r"(?:^|[^a-zA-Z])for[-\s]*(.+?)(?:\.docx?|\.pdf|\.txt|$)", file_name, re.IGNORECASE)
+            if not for_match:
+                # 尝试匹配 -for 格式
+                for_match = re.search(r"-for\s*([^-]+)", file_name)
             if for_match:
                 industry_from_filename = for_match.group(1).strip()
-                industry_mapping = {
-                    '电商': '电商',
-                    '电子商务': '电商',
-                    '外贸': '销售',
-                    '销售': '销售',
-                    '业务': '销售',
-                    '品牌': '品牌',
-                    '市场': '品牌',
-                    '生产': '生产',
-                    '厂长': '生产',
-                    '研发': '研发',
-                    '人力': '人力资源',
-                    'HR': '人力资源',
-                    'HRD': '人力资源',
-                    'HRBP': '人力资源'
-                }
-                for key, value in industry_mapping.items():
-                    if key in industry_from_filename:
-                        return value
 
-        for industry, keywords in self.high_priority_keywords.items():
-            for keyword in keywords:
-                if keyword in text:
-                    return industry
+                # 改进的行业映射 - 按优先级排序：销售 > 品牌 > 生产 > 人力资源 > 研发 > 电商
+                # 销售类关键词优先匹配
+                sales_keywords = ['销售', '业务', '渠道', '外贸', '商务', '客户', 'CS渠道', 'CS', 'sales', 'bd']
+                for kw in sales_keywords:
+                    if kw in industry_from_filename.lower():
+                        print(f"[行业识别] 从for关键词识别: '{industry_from_filename}' -> '销售' (关键词: {kw})")
+                        return '销售'
+                
+                # 品牌类关键词
+                brand_keywords = ['品牌', '市场', '市场营销', '营销', '策划', '广告', '公关', 'CMO', 'marketing']
+                for kw in brand_keywords:
+                    if kw in industry_from_filename:
+                        print(f"[行业识别] 从for关键词识别: '{industry_from_filename}' -> '品牌' (关键词: {kw})")
+                        return '品牌'
+                
+                # 生产类关键词
+                production_keywords = ['生产', '厂长', '制造', '工厂', '车间']
+                for kw in production_keywords:
+                    if kw in industry_from_filename:
+                        print(f"[行业识别] 从for关键词识别: '{industry_from_filename}' -> '生产' (关键词: {kw})")
+                        return '生产'
+                
+                # 人力资源类关键词
+                hr_keywords = ['人力', '人力资源', 'HR', 'HRD', 'HRBP', '招聘']
+                for kw in hr_keywords:
+                    if kw in industry_from_filename.upper() or kw in industry_from_filename:
+                        print(f"[行业识别] 从for关键词识别: '{industry_from_filename}' -> '人力资源' (关键词: {kw})")
+                        return '人力资源'
+                
+                # 研发类关键词
+                rd_keywords = ['研发', '技术', '开发', '工程师', '技术总监', 'CTO', '首席科学家', '研究院']
+                for kw in rd_keywords:
+                    if kw in industry_from_filename:
+                        print(f"[行业识别] 从for关键词识别: '{industry_from_filename}' -> '研发' (关键词: {kw})")
+                        return '研发'
+                
+                # 电商类关键词
+                ecommerce_keywords = ['电商', '电子商务', '淘宝', '京东', '天猫', '拼多多', '直播', '运营']
+                for kw in ecommerce_keywords:
+                    if kw in industry_from_filename:
+                        print(f"[行业识别] 从for关键词识别: '{industry_from_filename}' -> '电商' (关键词: {kw})")
+                        return '电商'
+
+            # 优先级2b：直接在文件名中搜索行业关键词（不依赖for关键词）
+            # 按优先级顺序检测 - 优先级：销售 > 品牌 > 生产 > 人力资源 > 研发 > 电商
+            # 注意：'cs'单独可能是销售(CS渠道)，不是研发(Computer Science)
+            direct_mapping = [
+                ('销售', ['销售', '外贸', '渠道', '业务', '销售总监', '销售经理', '客户经理', '商务', 'bd', 'sales', 'cs渠道', 'cs总监']),
+                ('品牌', ['品牌', '市场', '策划', '广告', '公关', 'cmo', 'marketing', '品牌总监', '市场总监']),
+                ('生产', ['生产', '制造', '工厂', '厂长', '车间', '工艺']),
+                ('人力资源', ['人力', 'hr', '招聘', 'hrbp', 'hrd', '薪酬', '绩效']),
+                ('研发', ['java', 'python', '前端', '后端', '工程师', '技术', '架构', '算法', '开发', '程序员', 'coder', 'software', '技术总监', 'cto']),
+                ('电商', ['电商', '电子商务', '淘宝', '京东', '天猫', '拼多多', '直播', '运营']),
+            ]
+
+            for industry, keywords in direct_mapping:
+                for keyword in keywords:
+                    if keyword in file_name_lower:
+                        print(f"[行业识别] 从文件名直接识别: '{file_name}' -> '{industry}' (关键词: {keyword})")
+                        return industry
+
+        # 优先级3：使用高优先级关键词匹配（按研发、销售、品牌、生产、人力资源、电商的顺序）
+        priority_order = ['研发', '销售', '品牌', '生产', '人力资源', '电商']
+        for industry in priority_order:
+            if industry in self.high_priority_keywords:
+                for keyword in self.high_priority_keywords[industry]:
+                    if keyword in text:
+                        print(f"[行业识别] 高优先级关键词匹配: '{keyword}' -> '{industry}'")
+                        return industry
 
         industry_scores = {}
         for industry, keywords in self.industry_keywords.items():
@@ -733,9 +823,11 @@ class ResumeParser:
         if industry_scores:
             best_industry = max(industry_scores, key=industry_scores.get)
             if industry_scores[best_industry] > 0:
+                print(f"[行业识别] 关键词评分最高: '{best_industry}' (得分: {industry_scores[best_industry]})")
                 return best_industry
 
-        return '未知'
+        print(f"[行业识别] 未识别到行业，返回默认值'电商'")
+        return '电商'
 
     def parse_resume(self, file_path: str) -> Dict:
         """
@@ -748,8 +840,13 @@ class ResumeParser:
 
         basic_info = self._extract_basic_info(text, file_path)
         entities = self.extract_entities(text)
-        work_experiences = self._extract_work_experiences(text)
+
+        # 先提取教育经历
         education_experiences = self._extract_education_experiences(text)
+
+        # 提取工作经历，传入教育经历用于去重
+        work_experiences = self._extract_work_experiences(text, education_experiences)
+
         project_experiences = self._extract_project_experiences(text)
         achievements = self.extract_achievements(text)
         industry = self.identify_industry(text, file_path)
@@ -839,10 +936,229 @@ class ResumeParser:
 
         return info
 
-    def _extract_work_experiences(self, text: str) -> List[Dict]:
-        """提取工作经历"""
+    def _extract_work_experiences(self, text: str, education_experiences: List[Dict] = None) -> List[Dict]:
+        """提取工作经历 - 使用多策略提取"""
         experiences = []
 
+        # 策略1：尝试制表符分隔格式（最常见）
+        tab_experiences = self._extract_tab_separated_work(text)
+        if len(tab_experiences) > 0:
+            experiences.extend(tab_experiences)
+
+        # 策略2：尝试标准正则格式
+        regex_experiences = self._extract_regex_work(text)
+        if len(regex_experiences) > 0:
+            experiences.extend(regex_experiences)
+
+        # 策略3：从背景介绍中提取（适用于猎头推荐报告）
+        if len(experiences) < 5:
+            background_experiences = self._extract_work_from_background(text)
+            if len(background_experiences) > 0:
+                experiences.extend(background_experiences)
+
+        # 去重，并过滤掉教育经历
+        experiences = self._deduplicate_work_experiences(experiences, education_experiences)
+
+        # 按开始时间排序
+        experiences = self._sort_work_experiences_by_time(experiences)
+
+        return experiences
+
+    def _deduplicate_work_experiences(self, experiences: List[Dict], education_experiences: List[Dict] = None) -> List[Dict]:
+        """对工作经历去重，并过滤掉教育经历"""
+        seen = set()
+        unique = []
+
+        # 收集教育经历的学校名称
+        edu_schools = set()
+        if education_experiences:
+            for edu in education_experiences:
+                school = edu.get('school', '')
+                if school:
+                    edu_schools.add(school)
+
+        for exp in experiences:
+            # 创建唯一标识
+            company = exp.get('company', '')
+            position = exp.get('position', '')
+            time_period = exp.get('time_period', '')
+
+            # 清理公司名称（移除括号内容）
+            company_clean = re.sub(r'\s*\([^)]*\)\s*', '', company).strip()
+
+            # 创建唯一键：使用清理后的公司名 + 职位
+            key = (company_clean, position)
+
+            # 跳过教育经历（公司名称包含学校关键词）
+            if any(kw in company_clean for kw in ['大学', '学院', '商', '科院', '研究']):
+                continue
+
+            if key not in seen and company_clean:
+                seen.add(key)
+                unique.append(exp)
+
+        return unique
+
+    def _sort_work_experiences_by_time(self, experiences: List[Dict]) -> List[Dict]:
+        """按开始时间排序工作经历"""
+        import re
+        from datetime import datetime
+
+        def parse_date(date_str: str):
+            """解析日期字符串为(年, 月)"""
+            date_str = date_str.strip()
+
+            # 处理特殊情况
+            if date_str in ['至今', '现在', 'Present', 'present', '']:
+                return (datetime.now().year, datetime.now().month)
+
+            # 处理 2023.03 这样的格式
+            if '.' in date_str:
+                parts = date_str.split('.')
+                try:
+                    return (int(parts[0]), int(parts[1]))
+                except:
+                    pass
+
+            # 处理 2002/03 或 2002-03 格式
+            for sep in ['/', '-']:
+                if sep in date_str:
+                    parts = date_str.split(sep)
+                    try:
+                        return (int(parts[0]), int(parts[1]))
+                    except:
+                        pass
+
+            # 无法解析，返回一个很大的值（排在最后）
+            return (9999, 12)
+
+        def get_start_tuple(exp):
+            """获取工作经历的开始时间"""
+            time_period = exp.get('time_period', '')
+
+            # 如果有时间段，提取开始时间
+            if '-' in time_period:
+                start_str = time_period.split('-')[0].strip()
+                return parse_date(start_str)
+            elif '至' in time_period:
+                start_str = time_period.split('至')[0].strip()
+                return parse_date(start_str)
+
+            # 如果没有时间段，尝试从公司名推断
+            # 例如："5年阿里巴巴" 这样的格式
+            duration_match = re.search(r'(\d+(?:\.\d+)?)\s*年', time_period)
+            if duration_match:
+                # 有约定期，不知道具体时间，放在最后
+                return (9999, 12)
+
+            return (9999, 12)
+
+        return sorted(experiences, key=get_start_tuple)
+
+    def _extract_work_from_background(self, text: str) -> List[Dict]:
+        """从背景介绍中提取工作经历（适用于猎头推荐报告）"""
+        experiences = []
+
+        # 公司代码映射
+        company_map = {
+            'LWMX': 'LWMX管理咨询有限公司',
+            'LV': 'LVMH法国路威酩轩集团',
+            'AL': '阿里巴巴',
+            'ALBB': '阿里巴巴',
+            'LQX': 'LQ新零售/电商公司',
+            'WM': 'WM化妆品/广东WM生物技术',
+            'WMX': '广东WM生物技术股份有限公司'
+        }
+
+        # 识别"X年XXX公司"格式
+        # 例如："6年LWMX（LV）" "5年AL（P8）"
+        pattern = r'(\d+(?:\.\d+)?)\s*年\s*([A-Z]{2,4})(?:\s*（|\()(?:[^）)]*(?:P\d+|LV)?)[^）)]*(?:\）|\)))?'
+
+        matches = re.findall(pattern, text)
+
+        for duration, company_code in matches:
+            years = float(duration)
+            months = int(years * 12)
+
+            company_name = company_map.get(company_code, f'{company_code}公司')
+
+            # 根据公司确定可能的职位
+            if 'LVMH' in company_name or 'LV' in company_name:
+                position = '市场/销售经理'
+            elif '阿里巴巴' in company_name or 'AL' in company_code:
+                position = '高级经理/总监'
+            elif 'WM' in company_name:
+                position = '电商总经理'
+            else:
+                position = '专业人员'
+
+            experiences.append({
+                'time_period': f'约{years}年',
+                'company': company_name,
+                'position': position,
+                'duration_months': months,
+                'source': '背景介绍',
+                'note': f'从猎头报告背景介绍中提取，约{years}年工作经验'
+            })
+
+        # 去重（如果公司代码重复）
+        seen = set()
+        unique_experiences = []
+        for exp in experiences:
+            key = exp['company']
+            if key not in seen:
+                seen.add(key)
+                unique_experiences.append(exp)
+
+        # 按年限排序（从长到短）
+        unique_experiences.sort(key=lambda x: x.get('duration_months', 0), reverse=True)
+
+        return unique_experiences
+
+    def _extract_tab_separated_work(self, text: str) -> List[Dict]:
+        """策略1：提取制表符分隔的工作经历"""
+        experiences = []
+
+        lines = text.split('\n')
+        for line in lines:
+            line = line.strip()
+            if not line:
+                continue
+
+            # 检测是否为工作经历行：包含时间、公司、职位
+            # 格式示例: 2020.09–2023.06    重庆大学（985/211）        化学工程与技术        博士（统招）
+            # 或: 2022.09–至今    GZDC健康科技有限公司        总经办副总经理
+            if re.search(r'\d{4}[./\-\u5e74]\d{0,2}[./\-\u6708]?\s*[-–—至]\s*(?:至今|\d{4})', line) or re.search(r'\d{4}.*至今', line):
+                # 按制表符或多个空格分割
+                parts = re.split(r'\t+|\s{2,}', line)
+
+                # 清理每个部分
+                cleaned_parts = [p.strip() for p in parts if p.strip()]
+
+                # 至少需要3个部分：时间、公司、职位
+                if len(cleaned_parts) >= 3:
+                    time_period = cleaned_parts[0]
+                    company = cleaned_parts[1]
+                    position = ' '.join(cleaned_parts[2:])  # 可能有多余的职位描述
+
+                    # 清理公司名称（移除括号内容中的职位）
+                    company = re.sub(r'\s*[（(].*?[）)]$', '', company)
+
+                    # 验证时间格式
+                    if re.search(r'\d{4}', time_period) and re.search(r'\d{4}|至今', time_period):
+                        experiences.append({
+                            'time_period': time_period,
+                            'company': company,
+                            'position': position,
+                            'responsibilities': [],
+                            'achievements': []
+                        })
+
+        return experiences
+
+    def _extract_regex_work(self, text: str) -> List[Dict]:
+        """策略2：使用正则表达式提取工作经历"""
+        experiences = []
         lines = text.split('\n')
 
         current_exp = None
@@ -851,7 +1167,9 @@ class ResumeParser:
             if not line:
                 continue
 
-            time_company_pattern = r'(\d{4}[/\-\u5e74]\d{0,2}[/\-\u6708]?\d{0,2}[\u65e5]?\s*[-–—至]\s*\d{4}[/\-\u5e74]\d{0,2}[/\-\u6708]?\d{0,2}[\u65e5]?|至今 | 当前)[\s\t]+([\u4e00-\u9fa5A-Z0-9()（）]+?)[\s\t]+([总监经理工程师主管主任厂长总裁总经理副总裁董事长专员助理代表分析师设计师研究员科学家博士博士后])'
+            # 优化的时间-公司-职位正则
+            time_company_pattern = r'(\d{4}[./\-\u5e74]\d{0,2}[./\-\u6708]?\s*[-–—至]\s*\d{4}[./\-\u5e74]\d{0,2}[./\-\u6708]?|至今|\d{4}[./\-\u5e74]\d{0,2}[./\-\u6708]?\s*[-–—至]\s*至今)\s+([\u4e00-\u9fa5A-Z0-9（()（）]+?公司|[\u4e00-\u9fa5A-Z0-9（()（）]+?集团|[\u4e00-\u9fa5A-Z0-9（()（）]+?企业|[\u4e00-\u9fa5A-Z0-9（()（）]+?中心|[\u4e00-\u9fa5A-Z0-9（()（）]+?医院|[\u4e00-\u9fa5A-Z0-9（()（）]+?店|[\u4e00-\u9fa5A-Z0-9（()（）]+?厂|[\u4e00-\u9fa5A-Z0-9（()（）]+?院|[\u4e00-\u9fa5A-Z0-9（()（）]+?所|[\u4e00-\u9fa5A-Z0-9（()（）]+?局|[\u4e00-\u9fa5A-Z0-9（()（）]+?司|[\u4e00-\u9fa5A-Z0-9（()（）]+?行|[\u4e00-\u9fa5A-Z0-9（()（）]+?馆|[\u4e00-\u9fa5A-Z0-9（()（）]+?吧|[\u4e00-\u9fa5A-Z0-9（()（）]+?吧|[\u4e00-\u9fa5A-Z0-9（）()]+)\s+([\u4e00-\u9fa5A-Z0-9（）()]+总监|[\u4e00-\u9fa5A-Z0-9（）()]+经理|[\u4e00-\u9fa5A-Z0-9（）()]+主管|[\u4e00-\u9fa5A-Z0-9（）()]+主任|[\u4e00-\u9fa5A-Z0-9（）()]+工程师|[\u4e00-\u9fa5A-Z0-9（）()]+员|[\u4e00-\u9fa5A-Z0-9（）()]+代表|[\u4e00-\u9fa5A-Z0-9（）()]+助理|[\u4e00-\u9fa5A-Z0-9（）()]+秘书|[\u4e00-\u9fa5A-Z0-9（）()]+长|[\u4e00-\u9fa5A-Z0-9（）()]+总|[\u4e00-\u9fa5A-Z0-9（）()]+博士|[\u4e00-\u9fa5A-Z0-9（）()]+硕士|[\u4e00-\u9fa5A-Z0-9（）()]+总监|[\u4e00-\u9fa5A-Z0-9（）()]+负责人)'
+
             match = re.search(time_company_pattern, line)
 
             if match:
@@ -866,8 +1184,10 @@ class ResumeParser:
                     'achievements': []
                 }
             elif current_exp:
-                if '职责' in line or '业绩' in line or '工作' in line:
+                # 跳过职责标题行
+                if '职责' in line or '业绩' in line or '工作' in line or '公司' in line:
                     continue
+                # 添加职责行
                 current_exp['responsibilities'].append(line)
 
         if current_exp:
@@ -879,18 +1199,188 @@ class ResumeParser:
         """提取教育经历"""
         experiences = []
 
-        edu_pattern = r'(\d{4}[/\-\u5e74]\d{0,2}[/\-\u6708]?\d{0,2}[\u65e5]?\s*[-–—]\s*\d{4}[/\-\u5e74]\d{0,2}[/\-\u6708]?\d{0,2}[\u65e5]?)\s+([\u4e00-\u9fa5A-Z]+?(?:大学 | 学院 | 学校))\s+([\u4e00-\u9fa5A-Z]+?(?:工程 | 技术 | 科学 | 管理 | 经济 | 文学 | 法学 | 教育 | 艺术|语言)?)\s+(本科 | 硕士 | 博士 | 大专 | 专科|学士|硕士|博士)'
+        # 策略1：处理表格格式（用制表符分隔）
+        # 格式：时间\t学校\t专业(可能为空)\t学历
+        # 修复：正确匹配制表符分隔的数据，且过滤掉工作经历行
+        lines = text.split('\n')
+        for line in lines:
+            # 检测教育经历表格行（包含学校和学历关键词）
+            # 同时过滤掉工作经历行（包含公司、总监、经理等职位词）
+            if re.search(r'\d{4}/\d{2}', line) and any(kw in line for kw in ['大学', '学院', '商', '科院']):
+                # 跳过明显是工作经历的关键词
+                if any(kw in line for kw in ['公司', '总监', '经理', '事业部', '总经理', '负责人', '主任', '主管']):
+                    continue
 
-        matches = re.findall(edu_pattern, text)
-        for match in matches:
-            experiences.append({
-                'time_period': match[0],
-                'school': match[1],
-                'major': match[2],
-                'degree': match[3]
-            })
+                # 提取制表符分隔的各个部分
+                parts = line.split('\t')
+
+                # 需要至少3个部分（时间、学校、学历）
+                if len(parts) < 3:
+                    continue
+
+                time_str = parts[0].strip()
+                school = parts[1].strip()
+                major = parts[2].strip() if len(parts) > 2 else '未知'
+                degree_raw = parts[3].strip() if len(parts) > 3 else ''
+
+                # 跳过表头
+                if '院校名称' in school or '起止时间' in time_str:
+                    continue
+
+                # 跳过不包含学校的行
+                if not any(kw in school for kw in ['大学', '学院', '商', '科院', '学校']):
+                    continue
+
+                # 提取时间
+                time_match = re.search(r'(\d{4}/\d{2}/\d{2})\s*[-–—至]\s*(\d{4}/\d{2}/\d{2})', time_str)
+                if time_match:
+                    time_period = f"{time_match.group(1)}-{time_match.group(2)}"
+                else:
+                    # 尝试不带日期的时间格式
+                    time_match2 = re.search(r'(\d{4}/\d{2})\s*[-–—至]\s*(\d{4}/\d{2})', time_str)
+                    if time_match2:
+                        time_period = f"{time_match2.group(1)}-{time_match2.group(2)}"
+                    else:
+                        continue
+
+                # 如果专业列是空的，那么学历可能在专业列
+                if major and degree_raw:
+                    # 专业列和学历列都有
+                    pass
+                elif major and not degree_raw:
+                    # 学历在专业列
+                    degree_raw = major
+                    major = '未知'
+                elif not major and degree_raw:
+                    # 专业列空，学历在第4列
+                    pass
+                elif not major and not degree_raw:
+                    # 都空
+                    degree_raw = '未知'
+
+                degree = self._normalize_degree(degree_raw)
+
+                experiences.append({
+                    'time_period': time_period,
+                    'school': school,
+                    'major': major if major else '未知',
+                    'degree': degree
+                })
+
+        # 策略2：处理标准格式（用空格分隔）
+        if len(experiences) < 3:  # 如果表格格式没提取到足够数据
+            edu_pattern = r'(\d{4}[./\-\u5e74]\d{0,2}[./\-\u6708]?\d{0,2}[\u65e5]?\s*[-–—至至]\s*\d{4}[./\-\u5e74]\d{0,2}[./\-\u6708]?\d{0,2}[\u65e5]?)\s+([\u4e00-\u9fa5A-Z0-9（）()\s]+?)\s+([\u4e00-\u9fa5A-Z0-9（）()\s]*?)\s*(?:MBA|EMBA|硕士|本科|研究生|博士|大专|专科|学士)'
+
+            matches = re.findall(edu_pattern, text)
+            for match in matches:
+                experiences.append({
+                    'time_period': match[0],
+                    'school': match[1].strip(),
+                    'major': match[2].strip() if match[2].strip() else '未知',
+                    'degree': self._normalize_degree(match[2] if len(match) > 2 else '未知')
+                })
+
+        # 策略3：从背景介绍中提取（适用于猎头推荐报告）
+        if not experiences:
+            experiences.extend(self._extract_education_from_background(text))
+
+        # 去重并清理
+        experiences = self._deduplicate_education(experiences)
 
         return experiences
+
+    def _deduplicate_education(self, experiences: List[Dict]) -> List[Dict]:
+        """对教育经历去重"""
+        seen = set()
+        unique = []
+
+        for exp in experiences:
+            key = (exp.get('school', ''), exp.get('time_period', ''))
+            if key not in seen and exp.get('school') not in ['未知', '', None]:
+                # 过滤掉明显不是学校的数据
+                school = exp.get('school', '')
+                if any(c in school for c in ['大学', '学院', '学校', '商', '科院', '研究']):
+                    seen.add(key)
+                    unique.append(exp)
+
+        return unique
+
+    def _extract_education_from_background(self, text: str) -> List[Dict]:
+        """从背景介绍中提取教育信息（适用于猎头推荐报告）"""
+        experiences = []
+
+        # 识别"1981年，985 MBA"格式
+        patterns = [
+            r'(?:出生于|19\d{2})\s*年[，,]\s*(98[5\d]\s*(?:MBA|EMBA|硕士|研究生))',
+            r'(?:19\d{2})\s*年[，,]\s*([98\d]{3}\s*(?:大学|学院))\s*([^\s，,]+(?:硕士|博士|MBA))',
+            r'((?:98[5\d]|[211])\s*(?:MBA|EMBA|硕士|研究生))',
+            r'毕业于\s*([^\s，,。]+(?:大学|学院|学校))\s*,?\s*([^\s，,。]+(?:硕士|博士|学士))'
+        ]
+
+        for pattern in patterns:
+            matches = re.findall(pattern, text)
+            for match in matches:
+                if isinstance(match, tuple) and len(match) >= 2:
+                    school = match[0].strip() if len(match[0]) > 2 else '985/211高校'
+                    degree = match[1].strip()
+                else:
+                    school = '高校'
+                    degree = match.strip() if isinstance(match, str) else '未知'
+
+                # 识别学历等级
+                if 'MBA' in degree or 'EMBA' in degree:
+                    degree = '硕士'
+                elif '硕士' in degree or '研究生' in degree:
+                    degree = '硕士'
+                elif '博士' in degree:
+                    degree = '博士'
+                elif '本科' in degree or '学士' in degree:
+                    degree = '本科'
+                else:
+                    degree = '未知'
+
+                experiences.append({
+                    'time_period': '未知',
+                    'school': school,
+                    'major': '工商管理',
+                    'degree': degree,
+                    'source': '背景介绍',
+                    'note': '从猎头报告背景介绍中提取'
+                })
+                break  # 只提取一个
+
+            if experiences:
+                break
+
+        return experiences
+
+    def _normalize_degree(self, degree_str: str) -> str:
+        """标准化学历描述"""
+        if not degree_str or degree_str.strip() == '':
+            # 尝试从原始文本推断
+            return '未知'
+
+        degree_str = degree_str.strip()
+
+        # 检查是否包含MBA/EMBA
+        if 'MBA' in degree_str.upper() or 'EMBA' in degree_str.upper():
+            return '硕士'
+
+        # 检查其他学历
+        degree_map = {
+            '本科': '本科',
+            '学士': '本科',
+            '专科': '大专',
+            '大专': '大专',
+            '硕士': '硕士',
+            '研究生': '硕士',
+            '博士': '博士',
+        }
+        for key, value in degree_map.items():
+            if key in degree_str:
+                return value
+
+        return degree_str if degree_str else '未知'
 
     def _extract_project_experiences(self, text: str) -> List[Dict]:
         """提取项目经验"""
@@ -929,8 +1419,35 @@ class ResumeParser:
         periods = []
         for exp in work_experiences:
             time_str = exp.get('time_period', '')
+            company = exp.get('company', '')
+
+            # 优先使用duration_months（如果存在）
+            if 'duration_months' in exp:
+                months = exp['duration_months']
+                if 0 < months <= 360:  # 合理范围：不超过30年
+                    total_months += months
+                    periods.append(months)
+                    continue
+
+            # 处理"约X年"格式
+            if '约' in time_str and '年' in time_str:
+                match = re.search(r'约(\d+(?:\.\d+)?)\s*年', time_str)
+                if match:
+                    years = float(match.group(1))
+                    months = int(years * 12)
+                    if months <= 360:  # 合理范围：不超过30年
+                        total_months += months
+                        periods.append(months)
+                    continue
+
+            # 处理标准时间格式
             months = self.extract_time_to_months(time_str)
-            if months and months > 0:
+
+            # 调试日志
+            print(f"[DEBUG _calculate_work_duration] {company}: {time_str} -> {months} months")
+
+            # 更严格的合理性检查：不超过20年，且为正数
+            if months and 0 < months <= 240:
                 total_months += months
                 periods.append(months)
 
