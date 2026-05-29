@@ -29,10 +29,12 @@ class StandardWeightProvider:
             # 默认权重（如果配置文件不存在）
             self._weights = {
                 "电商": {
-                    "education": 0.10,
-                    "experience": 0.30,
-                    "skill_achievement": 0.40,
-                    "comprehensive": 0.20
+                    "education": 0.08,
+                    "experience": 0.25,
+                    "skill_achievement": 0.32,
+                    "comprehensive": 0.15,
+                    "growth_potential": 0.10,
+                    "job_matching": 0.10
                 }
             }
 
@@ -58,10 +60,12 @@ class StandardWeightProvider:
 
         # 默认返回电商权重
         return self._weights.get("电商", {
-            "education": 0.10,
-            "experience": 0.30,
-            "skill_achievement": 0.40,
-            "comprehensive": 0.20
+            "education": 0.08,
+            "experience": 0.25,
+            "skill_achievement": 0.32,
+            "comprehensive": 0.15,
+            "growth_potential": 0.10,
+            "job_matching": 0.10
         })
 
 # 全局实例

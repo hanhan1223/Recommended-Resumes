@@ -183,8 +183,8 @@ class AchievementAndSoftSkillScorer:
                 if keyword.lower() in all_text:
                     match_count += 1
 
-        if category == "experience_indicators":
-            match_count *= 1.5
+            if category == "experience_indicators":
+                match_count *= 1.5
 
         base_score = 2.0
         keyword_score = min(match_count / 10, 2.5)
@@ -194,6 +194,66 @@ class AchievementAndSoftSkillScorer:
 
         score = base_score + keyword_score + project_bonus
         return min(score, 5.0)
+
+    def calculate_eq_score(self, resume: Dict) -> float:
+        """
+        独立情商评分
+
+        从多个维度评估情商：
+        1. 情商关键词匹配（同理心、换位思考等）
+        2. 沟通协调能力
+        3. 团队领导与合作
+        4. 抗压与适应能力
+        5. 跨部门/社交经验
+
+        Args:
+            resume: 简历字典
+
+        Returns:
+            情商得分 (1.0-5.0)
+        """
+        entities = resume.get("entities", {})
+        skills_raw = entities.get("skills", [])
+        project_experiences = resume.get("project_experiences", [])
+        work_experiences = resume.get("work_experiences", [])
+
+        all_text = " ".join(skills_raw).lower() if skills_raw else ""
+
+        for project in project_experiences:
+            desc = " ".join(project.get("description", [])).lower()
+            all_text += " " + desc
+
+        for work in work_experiences:
+            resp = " ".join(work.get("responsibilities", [])).lower()
+            all_text += " " + resp
+
+        if not all_text.strip():
+            return 2.5
+
+        # EQ维度权重
+        eq_dimensions = {
+            "emotional_intelligence": 0.25,  # 核心情商
+            "communication": 0.20,           # 沟通表达
+            "leadership": 0.15,              # 领导力
+            "collaboration": 0.15,           # 团队合作
+            "adaptability": 0.15,            # 抗压适应
+            "experience_indicators": 0.10,   # 社交经验
+        }
+
+        total_score = 0.0
+        for category, weight in eq_dimensions.items():
+            keywords = self.SOFT_SKILL_KEYWORDS.get(category, [])
+            match_count = sum(1 for kw in keywords if kw.lower() in all_text)
+            # 每个维度得分: 匹配2个关键词即满分
+            dim_score = min(match_count / 2.0, 1.0) * 5.0
+            total_score += weight * dim_score
+
+        # 工作经验加成（经验丰富的人通常情商更高）
+        n_work = len(work_experiences)
+        experience_bonus = min(n_work * 0.1, 0.5)
+
+        score = total_score + experience_bonus
+        return max(1.0, min(score, 5.0))
 
     def get_achievement_analysis(self, resume: Dict) -> Dict:
         """

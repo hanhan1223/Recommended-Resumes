@@ -83,6 +83,19 @@ class EntropyWeightCalculator:
         if data_matrix.size == 0:
             raise ValueError("数据矩阵不能为空")
 
+        if data_matrix.shape[0] <= 1:
+            n_features = data_matrix.shape[1]
+            weights = np.ones(n_features) / n_features
+            self.last_weights = weights
+            self.last_entropy = np.ones(n_features)
+            self.last_metrics = {
+                "entropy_values": np.ones(n_features).tolist(),
+                "information_utility": np.zeros(n_features).tolist(),
+                "weights": weights.tolist(),
+                "note": "单样本无法计算熵权，使用均匀权重"
+            }
+            return weights, self.last_metrics
+
         entropy, information_utility = self.calculate_entropy(data_matrix)
 
         # 计算权重

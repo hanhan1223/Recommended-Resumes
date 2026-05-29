@@ -1,34 +1,33 @@
 <template>
-  <div class="ranking-container">
-    <!-- 筛选栏 -->
-    <el-card class="filter-card" shadow="never">
-      <el-row :gutter="20" align="middle">
-        <el-col :span="8">
-          <label class="filter-label">选择行业：</label>
-          <el-select v-model="selectedIndustry" placeholder="请选择行业" @change="handleIndustryChange" style="width: 200px;">
-            <el-option
-              v-for="item in store.industries"
-              :key="item.code"
-              :label="item.name"
-              :value="item.code"
-            />
-          </el-select>
+  <div class="ranking-page">
+    <!-- Filter Bar -->
+    <div class="card filter-bar">
+      <el-row :gutter="16" align="middle">
+        <el-col :span="7">
+          <div class="filter-item">
+            <label class="filter-label">行业</label>
+            <el-select v-model="selectedIndustry" placeholder="选择行业" @change="handleIndustryChange" style="width: 100%">
+              <el-option v-for="item in store.industries" :key="item.code" :label="item.name" :value="item.code" />
+            </el-select>
+          </div>
         </el-col>
         <el-col :span="5">
-          <label class="filter-label">显示数量：</label>
-          <el-select v-model="topN" @change="handleTopNChange" style="width: 120px;">
-            <el-option label="Top 5" :value="5" />
-            <el-option label="Top 10" :value="10" />
-            <el-option label="Top 20" :value="20" />
-            <el-option label="全部" :value="100" />
-          </el-select>
+          <div class="filter-item">
+            <label class="filter-label">数量</label>
+            <el-select v-model="topN" @change="handleTopNChange" style="width: 100%">
+              <el-option label="Top 5" :value="5" />
+              <el-option label="Top 10" :value="10" />
+              <el-option label="Top 20" :value="20" />
+              <el-option label="全部" :value="100" />
+            </el-select>
+          </div>
         </el-col>
-        <el-col :span="5">
+        <el-col :span="6">
           <el-button type="primary" @click="refreshRankings" :loading="store.loading">
             <el-icon><Refresh /></el-icon>刷新
           </el-button>
         </el-col>
-        <el-col :span="6" style="text-align: right;">
+        <el-col :span="6" style="text-align: right">
           <el-button-group>
             <el-button type="success" @click="handleExportExcel" :disabled="!selectedIndustry">
               <el-icon><Download /></el-icon>Excel
@@ -39,173 +38,105 @@
           </el-button-group>
         </el-col>
       </el-row>
-    </el-card>
+    </div>
 
-    <!-- 统计卡片 -->
-    <el-row :gutter="20" class="stats-row">
-      <el-col :span="6">
-        <div class="stat-box primary">
-          <el-icon :size="32"><User /></el-icon>
+    <!-- Stats -->
+    <el-row :gutter="16" class="stats-row">
+      <el-col :span="6" v-for="stat in statCards" :key="stat.label">
+        <div class="card stat-card">
+          <el-icon :size="28" :color="stat.color"><component :is="stat.icon" /></el-icon>
           <div class="stat-info">
-            <div class="stat-value">{{ store.industryStats.count || 0 }}</div>
-            <div class="stat-label">候选人总数</div>
-          </div>
-        </div>
-      </el-col>
-      <el-col :span="6">
-        <div class="stat-box success">
-          <el-icon :size="32"><Trophy /></el-icon>
-          <div class="stat-info">
-            <div class="stat-value">{{ formatScore(store.industryStats.max) }}</div>
-            <div class="stat-label">最高TCI得分</div>
-          </div>
-        </div>
-      </el-col>
-      <el-col :span="6">
-        <div class="stat-box warning">
-          <el-icon :size="32"><TrendCharts /></el-icon>
-          <div class="stat-info">
-            <div class="stat-value">{{ formatScore(store.industryStats.avg) }}</div>
-            <div class="stat-label">平均TCI得分</div>
-          </div>
-        </div>
-      </el-col>
-      <el-col :span="6">
-        <div class="stat-box danger">
-          <el-icon :size="32"><WarnTriangleFilled /></el-icon>
-          <div class="stat-info">
-            <div class="stat-value">{{ penaltyCount }}</div>
-            <div class="stat-label">跳槽惩罚人数</div>
+            <div class="stat-value">{{ stat.value }}</div>
+            <div class="stat-label">{{ stat.label }}</div>
           </div>
         </div>
       </el-col>
     </el-row>
 
-    <!-- 主内容区 -->
-    <el-row :gutter="20">
-      <!-- 排名列表 -->
+    <!-- Main Content -->
+    <el-row :gutter="16">
+      <!-- Ranking Table -->
       <el-col :span="14">
-        <el-card class="ranking-card">
-          <template #header>
-            <div class="card-header">
-              <span>🏆 {{ currentIndustryName }}排名榜</span>
-              <el-tag type="info">共 {{ store.rankings.length }} 人</el-tag>
-            </div>
-          </template>
-          
-          <!-- 错误提示 -->
-          <el-alert
-            v-if="store.error"
-            :title="store.error"
-            type="warning"
-            :closable="false"
-            show-icon
-            style="margin-bottom: 15px"
-          />
-          
-          <!-- 空状态提示 -->
-          <el-empty
-            v-else-if="!store.loading && store.rankings.length === 0 && selectedIndustry"
-            description="该行业暂无候选人数据"
-          >
-            <template #description>
-              <p>该行业暂无候选人数据</p>
-              <p style="font-size: 12px; color: #999; margin-top: 10px;">
-                请先上传并解析该行业的简历文件
-              </p>
-            </template>
-            <el-button type="primary" @click="$router.push('/upload')">
-              去上传简历
-            </el-button>
+        <div class="card ranking-card">
+          <div class="card-header">
+            <span class="card-title">{{ currentIndustryName }} 排名榜</span>
+            <el-tag type="info" size="small">{{ store.rankings.length }} 人</el-tag>
+          </div>
+
+          <el-alert v-if="store.error" :title="store.error" type="warning" :closable="false" show-icon style="margin-bottom: var(--space-md)" />
+
+          <el-empty v-else-if="!store.loading && store.rankings.length === 0 && selectedIndustry" description="暂无数据">
+            <el-button type="primary" @click="$router.push('/upload')">上传简历</el-button>
           </el-empty>
-          
-          <el-table
-            v-else
-            :data="store.rankings"
-            stripe
-            v-loading="store.loading"
-            style="width: 100%"
-          >
-            <el-table-column type="index" label="排名" width="80" align="center">
+
+          <el-table v-else :data="store.rankings" stripe v-loading="store.loading" style="width: 100%">
+            <el-table-column type="index" label="排名" width="70" align="center">
               <template #default="{ $index }">
-                <div class="rank-badge" :class="`rank-${$index + 1}`">
-                  {{ $index + 1 }}
-                </div>
+                <div class="rank-badge" :class="`rank-${$index + 1}`">{{ $index + 1 }}</div>
               </template>
             </el-table-column>
-            
+
             <el-table-column prop="candidate_id" label="候选人" min-width="120">
               <template #default="{ row }">
-                <div class="candidate-name">
-                  <el-avatar :size="32" :icon="UserFilled" />
-                  <span>{{ row.candidate_id }}</span>
-                  <el-tag v-if="row.penalty_applied" type="danger" size="small" effect="plain">
-                    跳槽惩罚
-                  </el-tag>
+                <div class="candidate-cell">
+                  <span class="candidate-name">{{ row.candidate_id }}</span>
+                  <el-tag v-if="row.penalty_applied" type="danger" size="small" effect="plain">跳槽惩罚</el-tag>
                 </div>
               </template>
             </el-table-column>
-            
-            <el-table-column label="TCI得分" width="150" sortable>
+
+            <el-table-column label="TCI得分" width="160" sortable>
               <template #default="{ row }">
-                <div class="score-display">
-                  <span class="score-value">{{ formatScore(row.tci_score) }}</span>
+                <div class="score-cell">
+                  <span class="score-val">{{ formatScore(row.tci_score) }}</span>
                   <el-progress
-                    :percentage="parseFloat((row.tci_score / 5) * 100).toFixed(1)"
+                    :percentage="parseFloat((row.tci_score / 5) * 100)"
                     :color="getScoreColor(row.tci_score)"
                     :show-text="false"
+                    :stroke-width="6"
                     style="width: 80px"
                   />
                 </div>
               </template>
             </el-table-column>
-            
-            <el-table-column label="操作" width="100" align="center">
+
+            <el-table-column label="操作" width="80" align="center">
               <template #default="{ row }">
-                <el-button type="primary" link @click="viewDetail(row)">
-                  详情
-                </el-button>
+                <el-button type="primary" link @click="viewDetail(row)">详情</el-button>
               </template>
             </el-table-column>
           </el-table>
-        </el-card>
+        </div>
       </el-col>
 
-      <!-- 可视化图表 -->
+      <!-- Charts -->
       <el-col :span="10">
-        <el-card class="chart-card">
-          <template #header>
-            <div class="card-header">
-              <span>📊 得分分布</span>
-            </div>
-          </template>
-          <div class="chart-container">
-            <v-chart :option="barChartOption" autoresize style="height: 300px" />
+        <div class="card chart-card">
+          <div class="card-header">
+            <span class="card-title">得分分布</span>
           </div>
-        </el-card>
+          <v-chart :option="barChartOption" autoresize style="height: 280px" />
+        </div>
 
-        <el-card class="chart-card" style="margin-top: 20px">
-          <template #header>
-            <div class="card-header">
-              <span>🎯 维度权重</span>
-            </div>
-          </template>
-          <div class="chart-container">
-            <v-chart :option="pieChartOption" autoresize style="height: 250px" />
+        <div class="card chart-card" style="margin-top: var(--space-md)">
+          <div class="card-header">
+            <span class="card-title">维度权重</span>
           </div>
-        </el-card>
+          <v-chart :option="pieChartOption" autoresize style="height: 300px" />
+        </div>
       </el-col>
     </el-row>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useResumeStore } from '@/stores'
 import { ElMessage } from 'element-plus'
-import { formatScore, formatPercentage } from '@/utils/format'
+import { formatScore } from '@/utils/format'
 import { exportUtils } from '@/utils/export'
+import { User, Trophy, TrendCharts, WarnTriangleFilled } from '@element-plus/icons-vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -216,66 +147,81 @@ const topN = ref(10)
 
 const currentIndustryName = computed(() => {
   const industry = store.industries.find(i => i.code === selectedIndustry.value)
-  return industry?.name || selectedIndustry.value
+  return industry?.name || selectedIndustry.value || '请选择行业'
 })
 
-const penaltyCount = computed(() => {
-  return store.rankings.filter(r => r.penalty_applied).length
+const penaltyCount = computed(() => store.rankings.filter(r => r.penalty_applied).length)
+
+const statCards = computed(() => [
+  { label: '候选人总数', value: store.industryStats.count || 0, icon: 'User', color: 'var(--color-primary)' },
+  { label: '最高TCI', value: formatScore(store.industryStats.max), icon: 'Trophy', color: 'var(--color-success)' },
+  { label: '平均TCI', value: formatScore(store.industryStats.avg), icon: 'TrendCharts', color: 'var(--color-warning)' },
+  { label: '跳槽惩罚', value: penaltyCount.value, icon: 'WarnTriangleFilled', color: 'var(--color-danger)' }
+])
+
+const barChartOption = computed(() => {
+  const isDark = document.documentElement.classList.contains('dark')
+  return {
+    tooltip: { trigger: 'axis' },
+    grid: { left: '3%', right: '4%', bottom: '3%', top: '12%', containLabel: true },
+    xAxis: {
+      type: 'category',
+      data: store.rankings.slice(0, 10).map(r => r.candidate_id),
+      axisLabel: { rotate: 30, fontSize: 11, color: isDark ? '#94A3B8' : '#64748B' }
+    },
+    yAxis: {
+      type: 'value', max: 5,
+      axisLabel: { color: isDark ? '#94A3B8' : '#64748B' },
+      splitLine: { lineStyle: { color: isDark ? '#334155' : '#E2E8F0' } }
+    },
+    series: [{
+      data: store.rankings.slice(0, 10).map(r => ({
+        value: parseFloat(r.tci_score.toFixed(2)),
+        itemStyle: { color: r.penalty_applied ? '#EF4444' : '#3B82F6', borderRadius: [4, 4, 0, 0] }
+      })),
+      type: 'bar',
+      barWidth: '60%',
+      label: { show: true, position: 'insideTop', fontSize: 11, color: '#fff', distance: 6 }
+    }]
+  }
 })
 
-// 柱状图配置
-const barChartOption = computed(() => ({
-  tooltip: { trigger: 'axis' },
-  grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
-  xAxis: {
-    type: 'category',
-    data: store.rankings.slice(0, 10).map(r => r.candidate_id),
-    axisLabel: { rotate: 30 }
-  },
-  yAxis: { type: 'value', max: 5 },
-  series: [{
-    data: store.rankings.slice(0, 10).map(r => ({
-      value: parseFloat(r.tci_score.toFixed(2)),
-      itemStyle: { color: r.penalty_applied ? '#ff6b6b' : '#4ECDC4' }
-    })),
-    type: 'bar',
-    barWidth: '60%',
-    label: { show: true, position: 'top', formatter: '{c}' }
-  }]
-}))
-
-// 饼图配置
 const pieChartOption = computed(() => {
   const weights = store.candidates[0]?.dimension_weights || {
-    education: 0.15,
-    experience: 0.30,
-    skill_achievement: 0.40,
-    comprehensive: 0.15
+    education: 0.12, experience: 0.25, skill_achievement: 0.32, comprehensive: 0.15, growth_potential: 0.10, job_matching: 0.10
   }
-  
+  const isDark = document.documentElement.classList.contains('dark')
   return {
     tooltip: { trigger: 'item' },
-    legend: { bottom: '5%' },
+    legend: {
+      orient: 'horizontal',
+      bottom: '0%',
+      itemGap: 16,
+      textStyle: { color: isDark ? '#CBD5E1' : '#475569', fontSize: 11 }
+    },
     series: [{
       type: 'pie',
-      radius: ['40%', '70%'],
-      avoidLabelOverlap: false,
-      itemStyle: { borderRadius: 10, borderColor: '#fff', borderWidth: 2 },
-      label: { show: true, formatter: '{b}: {d}%' },
+      radius: ['35%', '50%'],
+      center: ['50%', '40%'],
+      avoidLabelOverlap: true,
+      itemStyle: { borderRadius: 6, borderColor: isDark ? '#1E293B' : '#fff', borderWidth: 2 },
+      label: { show: true, formatter: '{b}\n{d}%', fontSize: 11, lineHeight: 14 },
       data: [
-        { value: weights.education * 100, name: '教育背景', itemStyle: { color: '#667eea' } },
-        { value: weights.experience * 100, name: '工作经历', itemStyle: { color: '#f5576c' } },
-        { value: weights.skill_achievement * 100, name: '技能成果', itemStyle: { color: '#4facfe' } },
-        { value: weights.comprehensive * 100, name: '综合素质', itemStyle: { color: '#43e97b' } }
+        { value: (weights.education || 0) * 100, name: '教育背景', itemStyle: { color: '#6366F1' } },
+        { value: (weights.experience || 0) * 100, name: '工作经历', itemStyle: { color: '#EC4899' } },
+        { value: (weights.skill_achievement || 0) * 100, name: '技能成果', itemStyle: { color: '#0EA5E9' } },
+        { value: (weights.comprehensive || 0) * 100, name: '综合素质', itemStyle: { color: '#10B981' } },
+        { value: (weights.growth_potential || 0) * 100, name: '成长潜力', itemStyle: { color: '#F59E0B' } },
+        { value: (weights.job_matching || 0) * 100, name: '岗位匹配', itemStyle: { color: '#8B5CF6' } }
       ]
     }]
   }
 })
 
 const getScoreColor = (score) => {
-  if (score >= 4) return '#67C23A'
-  if (score >= 3) return '#E6A23C'
-  return '#F56C6C'
+  if (score >= 4) return '#16A34A'
+  if (score >= 3) return '#D97706'
+  return '#DC2626'
 }
 
 const handleIndustryChange = () => {
@@ -284,9 +230,7 @@ const handleIndustryChange = () => {
 }
 
 const handleTopNChange = () => {
-  if (selectedIndustry.value) {
-    store.fetchRankings(selectedIndustry.value, topN.value)
-  }
+  if (selectedIndustry.value) store.fetchRankings(selectedIndustry.value, topN.value)
 }
 
 const refreshRankings = () => {
@@ -298,53 +242,37 @@ const refreshRankings = () => {
   }
 }
 
-const viewDetail = (row) => {
-  router.push(`/candidate/${row.candidate_id}`)
-}
+const viewDetail = (row) => router.push(`/candidate/${row.candidate_id}`)
 
 const handleExportExcel = () => {
-  if (!selectedIndustry.value) {
-    ElMessage.warning('请先选择行业')
-    return
-  }
-  if (!store.rankings || store.rankings.length === 0) {
+  if (!selectedIndustry.value || !store.rankings.length) {
     ElMessage.warning('没有数据可导出')
     return
   }
   try {
     exportUtils.exportToExcel(store.rankings, selectedIndustry.value, `${selectedIndustry.value}_排名报告`)
     ElMessage.success('Excel报告已下载')
-  } catch (error) {
-    ElMessage.error('导出失败: ' + error.message)
+  } catch (e) {
+    ElMessage.error('导出失败: ' + e.message)
   }
 }
 
 const handleExportPDF = async () => {
-  if (!selectedIndustry.value) {
-    ElMessage.warning('请先选择行业')
-    return
-  }
-  if (!store.rankings || store.rankings.length === 0) {
+  if (!selectedIndustry.value || !store.rankings.length) {
     ElMessage.warning('没有数据可导出')
     return
   }
   try {
-    ElMessage.info('正在生成PDF报告...')
-    await exportUtils.exportToPDF({
-      rankings: store.rankings,
-      industry: selectedIndustry.value,
-      candidates: store.candidates
-    }, `${selectedIndustry.value}_排名报告`)
-    ElMessage.success('PDF报告已下载')
-  } catch (error) {
-    ElMessage.error('导出失败: ' + error.message)
+    ElMessage.info('正在生成PDF...')
+    await exportUtils.exportToPDF({ rankings: store.rankings, industry: selectedIndustry.value, candidates: store.candidates }, `${selectedIndustry.value}_排名报告`)
+    ElMessage.success('PDF已下载')
+  } catch (e) {
+    ElMessage.error('导出失败: ' + e.message)
   }
 }
 
 onMounted(() => {
   store.fetchIndustries()
-  
-  // 从URL参数获取行业
   const industryFromQuery = route.query.industry
   if (industryFromQuery) {
     selectedIndustry.value = industryFromQuery
@@ -354,98 +282,106 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.ranking-container {
-  max-width: 1400px;
+.ranking-page {
+  max-width: 1200px;
   margin: 0 auto;
 }
 
-.filter-card {
-  margin-bottom: 20px;
-  border-radius: 12px;
+.filter-bar {
+  padding: var(--space-md) var(--space-lg);
+  margin-bottom: var(--space-md);
+}
+
+.filter-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
 }
 
 .filter-label {
+  font-size: var(--font-size-sm);
   font-weight: 500;
-  margin-right: 10px;
-  color: #666;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
 }
 
 .stats-row {
-  margin-bottom: 20px;
+  margin-bottom: var(--space-md);
 }
 
-.stat-box {
-  background: #fff;
-  border-radius: 12px;
-  padding: 20px;
+.stat-card {
+  padding: var(--space-md) var(--space-lg);
   display: flex;
   align-items: center;
-  gap: 15px;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  gap: var(--space-md);
 }
 
-.stat-box.primary { border-left: 4px solid #409EFF; }
-.stat-box.success { border-left: 4px solid #67C23A; }
-.stat-box.warning { border-left: 4px solid #E6A23C; }
-.stat-box.danger { border-left: 4px solid #F56C6C; }
-
 .stat-value {
-  font-size: 28px;
-  font-weight: bold;
-  color: #2c3e50;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--color-text-primary);
 }
 
 .stat-label {
-  font-size: 14px;
-  color: #666;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
 }
 
 .ranking-card, .chart-card {
-  border-radius: 12px;
+  padding: var(--space-lg);
 }
 
 .card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  margin-bottom: var(--space-md);
+}
+
+.card-title {
+  font-size: var(--font-size-lg);
   font-weight: 600;
+  color: var(--color-text-primary);
 }
 
 .rank-badge {
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: bold;
+  font-weight: 700;
+  font-size: var(--font-size-sm);
   margin: 0 auto;
 }
 
-.rank-1 { background: #FFD700; color: #fff; }
-.rank-2 { background: #C0C0C0; color: #fff; }
-.rank-3 { background: #CD7F32; color: #fff; }
-.rank-badge:not(.rank-1):not(.rank-2):not(.rank-3) { background: #2E86AB; color: #fff; }
+.rank-1 { background: #FBBF24; color: #78350F; }
+.rank-2 { background: #9CA3AF; color: #1F2937; }
+.rank-3 { background: #D97706; color: #fff; }
+.rank-badge:not(.rank-1):not(.rank-2):not(.rank-3) { background: var(--color-primary-bg); color: var(--color-primary); }
+
+.candidate-cell {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
 
 .candidate-name {
+  font-weight: 500;
+  color: var(--color-text-primary);
+}
+
+.score-cell {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--space-sm);
 }
 
-.score-display {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.score-value {
-  font-weight: bold;
-  font-size: 16px;
-  color: #2E86AB;
-}
-
-.chart-container {
-  padding: 10px;
+.score-val {
+  font-weight: 700;
+  font-size: var(--font-size-base);
+  color: var(--color-primary);
+  min-width: 36px;
 }
 </style>

@@ -1,372 +1,663 @@
 <template>
-  <div class="home-container">
-    <!-- 欢迎区域 -->
-    <div class="hero-section">
-      <el-row :gutter="40" align="middle">
-        <el-col :span="12">
-          <div class="hero-content">
-            <h1 class="hero-title">
-              <span class="highlight">AI驱动</span>的人才优选系统
-            </h1>
-            <p class="hero-desc">
-              基于AHP层次分析法与熵权法融合的多维度评分模型，
-              为6大行业提供科学的简历评价与人才排名服务。
-            </p>
-            <div class="hero-actions">
-              <el-button type="primary" size="large" @click="$router.push('/upload')">
-                <el-icon><Upload /></el-icon>上传简历
-              </el-button>
-              <el-button size="large" @click="$router.push('/ranking')">
-                <el-icon><View /></el-icon>查看排名
-              </el-button>
+  <div class="home">
+    <!-- Hero Section -->
+    <section class="hero">
+      <div class="hero-text">
+        <h1 class="hero-title">
+          <span class="gradient-text">D-TCI</span> 动态人才竞争力指数
+        </h1>
+        <p class="hero-desc">
+          基于AHP层次分析法与熵权法融合的行业自适应评分模型，覆盖教育背景、工作经历、技能成果、综合素质四大维度，为6大行业提供科学、可解释的人才评价与排序。
+        </p>
+        <div class="hero-actions">
+          <el-button type="primary" size="large" @click="$router.push('/upload')">
+            <el-icon><Upload /></el-icon>上传简历
+          </el-button>
+          <el-button size="large" @click="$router.push('/ranking')">
+            <el-icon><View /></el-icon>查看排名
+          </el-button>
+        </div>
+      </div>
+      <div class="hero-formula">
+        <div class="formula-card">
+          <div class="formula-header">D-TCI 评分公式</div>
+          <div class="formula-body">
+            <span class="formula-main">
+              TCI = W<sub>edu</sub> &times; S<sub>edu</sub> + W<sub>exp</sub> &times; S<sub>exp</sub> + W<sub>skill</sub> &times; S<sub>skill</sub> + W<sub>adj</sub> &times; S<sub>adj</sub>
+            </span>
+            <div class="formula-note">
+              权重由 AHP(0.5) + 熵权法(0.5) 融合生成，行业自适应
             </div>
-          </div>
-        </el-col>
-        <el-col :span="12">
-          <div class="hero-stats">
-            <el-row :gutter="20">
-              <el-col :span="12" v-for="stat in stats" :key="stat.label">
-                <div class="stat-card" :class="stat.type">
-                  <el-icon :size="40"><component :is="stat.icon" /></el-icon>
-                  <div class="stat-value">{{ stat.value }}</div>
-                  <div class="stat-label">{{ stat.label }}</div>
-                </div>
-              </el-col>
-            </el-row>
-          </div>
-        </el-col>
-      </el-row>
-    </div>
-
-    <!-- 行业卡片 -->
-    <div class="industry-section">
-      <h2 class="section-title">支持行业领域</h2>
-      <el-row :gutter="20">
-        <el-col :span="8" v-for="industry in industries" :key="industry.code">
-          <el-card class="industry-card" shadow="hover" @click="selectIndustry(industry.code)">
-            <div class="industry-icon" :style="{ background: industry.color }">
-              <el-icon :size="32" color="#fff"><component :is="industry.icon" /></el-icon>
-            </div>
-            <h3 class="industry-name">{{ industry.name }}</h3>
-            <p class="industry-desc">{{ industry.description }}</p>
-            <div class="industry-action">
-              <el-button type="primary" text>查看排名 <el-icon><ArrowRight /></el-icon></el-button>
-            </div>
-          </el-card>
-        </el-col>
-      </el-row>
-    </div>
-
-    <!-- 模型说明 -->
-    <div class="model-section">
-      <h2 class="section-title">评分模型架构</h2>
-      <el-row :gutter="30">
-        <el-col :span="6" v-for="(dim, index) in dimensions" :key="index">
-          <div class="dimension-card">
-            <div class="dim-icon" :style="{ background: dim.color }">{{ dim.icon }}</div>
-            <h4 class="dim-name">{{ dim.name }}</h4>
-            <p class="dim-desc">{{ dim.description }}</p>
-            <div class="dim-formula">{{ dim.formula }}</div>
-          </div>
-        </el-col>
-      </el-row>
-    </div>
-
-    <!-- 流程说明 -->
-    <div class="process-section">
-      <h2 class="section-title">系统工作流程</h2>
-      <div class="process-flow">
-        <div class="process-step" v-for="(step, index) in processSteps" :key="index">
-          <div class="step-number">{{ index + 1 }}</div>
-          <div class="step-content">
-            <el-icon :size="32" color="#2E86AB"><component :is="step.icon" /></el-icon>
-            <h4>{{ step.title }}</h4>
-            <p>{{ step.desc }}</p>
-          </div>
-          <div class="step-arrow" v-if="index < processSteps.length - 1">
-            <el-icon><ArrowRight /></el-icon>
           </div>
         </div>
       </div>
-    </div>
+    </section>
+
+    <!-- Key Stats -->
+    <section class="stats-row">
+      <div class="stat-card" v-for="stat in stats" :key="stat.label">
+        <div class="stat-value">{{ stat.value }}</div>
+        <div class="stat-label">{{ stat.label }}</div>
+      </div>
+    </section>
+
+    <!-- Model Innovation Showcase (核心: 模型创新性 50分) -->
+    <section class="section">
+      <h2 class="section-title">评分模型架构</h2>
+      <p class="section-subtitle">AHP-熵权融合的行业自适应动态权重机制</p>
+
+      <el-row :gutter="20">
+        <!-- 四维度评分 -->
+        <el-col :span="12">
+          <div class="card dim-card">
+            <h3 class="card-title">四维度评分体系</h3>
+            <div class="dim-grid">
+              <div class="dim-item" v-for="dim in dimensions" :key="dim.key">
+                <div class="dim-dot" :style="{ background: dim.color }"></div>
+                <div class="dim-info">
+                  <div class="dim-name">{{ dim.name }}</div>
+                  <div class="dim-formula">{{ dim.formula }}</div>
+                </div>
+              </div>
+            </div>
+            <div class="dim-note">
+              各维度得分经过标准化处理，消除量纲差异后进入加权计算
+            </div>
+          </div>
+        </el-col>
+
+        <!-- AHP-熵权融合 -->
+        <el-col :span="12">
+          <div class="card weight-card">
+            <h3 class="card-title">AHP-熵权融合赋权</h3>
+            <div class="weight-methods">
+              <div class="method-item">
+                <div class="method-badge ahp">AHP</div>
+                <div class="method-info">
+                  <div class="method-name">层次分析法 (主观)</div>
+                  <div class="method-desc">专家经验 + 岗位偏好</div>
+                </div>
+              </div>
+              <div class="method-plus">+</div>
+              <div class="method-item">
+                <div class="method-badge entropy">熵权</div>
+                <div class="method-info">
+                  <div class="method-name">熵权法 (客观)</div>
+                  <div class="method-desc">样本离散度 + 区分能力</div>
+                </div>
+              </div>
+            </div>
+            <div class="weight-formula">
+              W<sub>final</sub> = &alpha; &times; W<sub>AHP</sub> + (1-&alpha;) &times; W<sub>entropy</sub>
+              <span class="alpha-val">(&alpha; = 0.5)</span>
+            </div>
+            <div class="dim-note">
+              不同行业自动调整各维度权重，实现差异化评价
+            </div>
+          </div>
+        </el-col>
+      </el-row>
+    </section>
+
+    <!-- Industry Weight Comparison (展示行业差异化) -->
+    <section class="section">
+      <h2 class="section-title">行业权重对比</h2>
+      <p class="section-subtitle">同一候选人进入不同行业时，权重矩阵自动适配</p>
+
+      <div class="industry-grid">
+        <div
+          v-for="ind in industries"
+          :key="ind.code"
+          class="industry-item"
+          @click="selectIndustry(ind.code)"
+        >
+          <div class="industry-icon" :style="{ background: ind.color }">
+            <el-icon :size="20" color="#fff"><component :is="ind.icon" /></el-icon>
+          </div>
+          <div class="industry-name">{{ ind.name }}</div>
+          <div class="industry-weights">
+            <div class="weight-bar" v-for="w in ind.weights" :key="w.label">
+              <span class="weight-label">{{ w.label }}</span>
+              <div class="weight-track">
+                <div class="weight-fill" :style="{ width: w.pct + '%', background: w.color }"></div>
+              </div>
+              <span class="weight-pct">{{ w.pct }}%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- D-TCI Model Flow -->
+    <section class="section">
+      <h2 class="section-title">系统处理流程</h2>
+      <div class="flow-steps">
+        <div class="flow-step" v-for="(step, i) in steps" :key="i">
+          <div class="flow-num">{{ i + 1 }}</div>
+          <div class="flow-content">
+            <div class="flow-title">{{ step.title }}</div>
+            <div class="flow-desc">{{ step.desc }}</div>
+          </div>
+          <el-icon v-if="i < steps.length - 1" class="flow-arrow"><ArrowRight /></el-icon>
+        </div>
+      </div>
+    </section>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useResumeStore } from '@/stores'
+import { Upload, View, ArrowRight } from '@element-plus/icons-vue'
 
 const router = useRouter()
 const store = useResumeStore()
 
-const stats = ref([
-  { label: '支持行业', value: '6+', icon: 'OfficeBuilding', type: 'primary' },
-  { label: '评分维度', value: '4', icon: 'DataAnalysis', type: 'success' },
-  { label: '评估指标', value: '10+', icon: 'List', type: 'warning' },
-  { label: '准确率', value: '95%', icon: 'CircleCheck', type: 'danger' }
-])
+const stats = [
+  { value: '6', label: '覆盖行业' },
+  { value: '4', label: '评价维度' },
+  { value: 'D-TCI', label: '核心模型' },
+  { value: 'AHP+熵权', label: '赋权方法' }
+]
 
-const industries = ref([
-  { code: '电商', name: '电商行业', description: '电商运营、直播运营、电商总监等岗位', icon: 'ShoppingCart', color: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' },
-  { code: '品牌', name: '品牌市场', description: '品牌管理、市场推广、品牌总监等岗位', icon: 'Flag', color: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)' },
-  { code: '销售', name: '销售业务', description: '销售、外贸、渠道、业务负责人等岗位', icon: 'Sell', color: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)' },
-  { code: '研发', name: '研发技术', description: '研发、技术、科学家、研究院院长等岗位', icon: 'Cpu', color: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)' },
-  { code: '生产', name: '生产管理', description: '生产管理、厂长、质量、生产总监等岗位', icon: 'FirstAidKit', color: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)' },
-  { code: '人力资源', name: '人力资源', description: 'HR、招聘、薪酬、HRD、HRBP等岗位', icon: 'UserFilled', color: 'linear-gradient(135deg, #30cfd0 0%, #330867 100%)' }
-])
+const dimensions = [
+  { key: 'edu', name: '教育背景', formula: 'Sedu = f(学历, 学校, 专业)', color: 'var(--color-dim-education)' },
+  { key: 'exp', name: '工作经历', formula: 'Sexp = f(公司, 稳定性, 升职)', color: 'var(--color-dim-experience)' },
+  { key: 'skill', name: '技能成果', formula: 'Sskill = f(技能, 成果, 证书)', color: 'var(--color-dim-skill)' },
+  { key: 'adj', name: '综合素质', formula: 'Sadj = f(软技能) - 跳槽惩罚', color: 'var(--color-dim-comprehensive)' }
+]
 
-const dimensions = ref([
-  { name: '教育背景', icon: '🎓', color: '#667eea', description: '学历水平、毕业院校、专业匹配度', formula: 'Sedu = w1×学历 + w2×学校 + w3×专业' },
-  { name: '工作经历', icon: '💼', color: '#f5576c', description: '公司实力、稳定性、升职速度', formula: 'Sexp = w1×公司 + w2×稳定性 + w3×升职' },
-  { name: '技能成果', icon: '🏆', color: '#4facfe', description: '技能匹配度、重大成果、项目经验', formula: 'Sskill = w1×技能 + w2×成果' },
-  { name: '综合素质', icon: '⭐', color: '#43e97b', description: '软技能、情商、跳槽惩罚', formula: 'Sadj = 软技能 - 跳槽惩罚' }
-])
+const industries = [
+  {
+    code: '研发', name: '研发技术', icon: 'Cpu',
+    color: 'linear-gradient(135deg, #10B981, #059669)',
+    weights: [
+      { label: '技能', pct: 40, color: 'var(--color-dim-skill)' },
+      { label: '经历', pct: 30, color: 'var(--color-dim-experience)' },
+      { label: '教育', pct: 15, color: 'var(--color-dim-education)' },
+      { label: '综合', pct: 15, color: 'var(--color-dim-comprehensive)' }
+    ]
+  },
+  {
+    code: '销售', name: '销售业务', icon: 'Sell',
+    color: 'linear-gradient(135deg, #0EA5E9, #0284C7)',
+    weights: [
+      { label: '经历', pct: 35, color: 'var(--color-dim-experience)' },
+      { label: '综合', pct: 30, color: 'var(--color-dim-comprehensive)' },
+      { label: '技能', pct: 20, color: 'var(--color-dim-skill)' },
+      { label: '教育', pct: 15, color: 'var(--color-dim-education)' }
+    ]
+  },
+  {
+    code: '人力资源', name: '人力资源', icon: 'UserFilled',
+    color: 'linear-gradient(135deg, #8B5CF6, #7C3AED)',
+    weights: [
+      { label: '综合', pct: 35, color: 'var(--color-dim-comprehensive)' },
+      { label: '经历', pct: 30, color: 'var(--color-dim-experience)' },
+      { label: '技能', pct: 20, color: 'var(--color-dim-skill)' },
+      { label: '教育', pct: 15, color: 'var(--color-dim-education)' }
+    ]
+  },
+  {
+    code: '电商', name: '电商运营', icon: 'ShoppingCart',
+    color: 'linear-gradient(135deg, #6366F1, #4F46E5)',
+    weights: [
+      { label: '技能', pct: 35, color: 'var(--color-dim-skill)' },
+      { label: '经历', pct: 30, color: 'var(--color-dim-experience)' },
+      { label: '综合', pct: 20, color: 'var(--color-dim-comprehensive)' },
+      { label: '教育', pct: 15, color: 'var(--color-dim-education)' }
+    ]
+  }
+]
 
-const processSteps = ref([
-  { title: '简历上传', desc: '支持PDF、DOCX、TXT格式', icon: 'Upload' },
-  { title: '智能解析', desc: 'NLP提取关键信息', icon: 'DataLine' },
-  { title: '维度评分', desc: '四维度综合评估', icon: 'Histogram' },
-  { title: '动态权重', desc: 'AHP+熵权法计算', icon: 'ScaleToOriginal' },
-  { title: '生成排名', desc: 'TCI综合得分排序', icon: 'Trophy' }
-])
+const steps = [
+  { title: '简历上传', desc: '支持 PDF / DOCX / TXT' },
+  { title: '智能解析', desc: '规则 + NLP + LLM 混合抽取' },
+  { title: '结构化画像', desc: '生成统一人才数据对象' },
+  { title: '多维评分', desc: '四维度量化打分' },
+  { title: '动态赋权', desc: 'AHP + 熵权法融合权重' },
+  { title: 'D-TCI 排序', desc: '竞争力指数排名 + 可解释推荐' }
+]
 
 const selectIndustry = (code) => {
   store.currentIndustry = code
   router.push(`/ranking?industry=${code}`)
 }
-
-onMounted(() => {
-  store.fetchIndustries()
-})
 </script>
 
 <style scoped>
-.home-container {
-  max-width: 1400px;
+.home {
+  max-width: 1200px;
   margin: 0 auto;
 }
 
-.hero-section {
-  padding: 40px 0;
+/* Hero */
+.hero {
+  display: flex;
+  gap: var(--space-xl);
+  align-items: center;
+  padding: var(--space-xl) 0 var(--space-2xl);
 }
 
-.hero-content {
-  padding-right: 40px;
+.hero-text {
+  flex: 1;
 }
 
 .hero-title {
-  font-size: 42px;
-  font-weight: bold;
-  color: #2c3e50;
-  margin-bottom: 20px;
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  margin: 0 0 var(--space-md);
   line-height: 1.3;
 }
 
-.hero-title .highlight {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+.gradient-text {
+  background: linear-gradient(135deg, var(--color-primary), var(--color-accent));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
 .hero-desc {
-  font-size: 18px;
-  color: #666;
-  line-height: 1.8;
-  margin-bottom: 30px;
+  font-size: var(--font-size-lg);
+  color: var(--color-text-secondary);
+  line-height: 1.7;
+  margin: 0 0 var(--space-lg);
 }
 
 .hero-actions {
   display: flex;
-  gap: 15px;
+  gap: var(--space-md);
 }
 
-.hero-actions .el-button {
-  padding: 12px 30px;
-  font-size: 16px;
+.hero-formula {
+  flex-shrink: 0;
+  width: 380px;
+}
+
+.formula-card {
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-md);
+}
+
+.formula-header {
+  background: linear-gradient(135deg, var(--color-primary), var(--color-accent));
+  color: #fff;
+  padding: var(--space-sm) var(--space-md);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  text-align: center;
+}
+
+.formula-body {
+  padding: var(--space-lg);
+  text-align: center;
+}
+
+.formula-main {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  font-family: var(--font-mono);
+  display: block;
+  margin-bottom: var(--space-sm);
+}
+
+.formula-main sub {
+  font-size: 13px;
+  color: var(--color-primary);
+}
+
+.formula-note {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  margin-top: var(--space-sm);
+}
+
+/* Stats */
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-md);
+  margin-bottom: var(--space-2xl);
 }
 
 .stat-card {
-  background: #fff;
-  border-radius: 16px;
-  padding: 25px;
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-lg);
   text-align: center;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-  margin-bottom: 20px;
-  transition: transform 0.3s;
-}
-
-.stat-card:hover {
-  transform: translateY(-5px);
+  box-shadow: var(--shadow-sm);
 }
 
 .stat-value {
-  font-size: 36px;
-  font-weight: bold;
-  color: #2E86AB;
-  margin: 10px 0;
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--color-primary);
+  margin-bottom: var(--space-xs);
 }
 
 .stat-label {
-  font-size: 14px;
-  color: #666;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+/* Sections */
+.section {
+  margin-bottom: var(--space-2xl);
 }
 
 .section-title {
-  font-size: 28px;
-  font-weight: bold;
-  color: #2c3e50;
+  font-size: var(--font-size-2xl);
+  font-weight: 700;
+  color: var(--color-text-primary);
   text-align: center;
-  margin: 50px 0 30px;
-  position: relative;
+  margin: 0 0 var(--space-xs);
 }
 
-.section-title::after {
-  content: '';
-  position: absolute;
-  bottom: -10px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 60px;
-  height: 4px;
-  background: linear-gradient(135deg, #2E86AB 0%, #4ECDC4 100%);
-  border-radius: 2px;
-}
-
-.industry-card {
-  border-radius: 16px;
-  margin-bottom: 20px;
-  cursor: pointer;
-  transition: transform 0.3s, box-shadow 0.3s;
-}
-
-.industry-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 8px 30px rgba(0,0,0,0.12);
-}
-
-.industry-icon {
-  width: 60px;
-  height: 60px;
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 15px;
-}
-
-.industry-name {
-  font-size: 20px;
-  font-weight: bold;
-  color: #2c3e50;
-  margin-bottom: 8px;
-}
-
-.industry-desc {
-  font-size: 14px;
-  color: #666;
-  line-height: 1.6;
-  margin-bottom: 15px;
-  height: 44px;
-}
-
-.industry-action {
-  text-align: right;
-}
-
-.dimension-card {
-  background: #fff;
-  border-radius: 16px;
-  padding: 25px;
+.section-subtitle {
   text-align: center;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-base);
+  margin: 0 0 var(--space-lg);
+}
+
+.card-title {
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin: 0 0 var(--space-md);
+}
+
+/* Dimension card */
+.dim-card, .weight-card {
+  padding: var(--space-lg);
   height: 100%;
 }
 
-.dim-icon {
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
+.dim-grid {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.dim-item {
   display: flex;
   align-items: center;
-  justify-content: center;
-  margin: 0 auto 15px;
-  font-size: 28px;
+  gap: var(--space-md);
+}
+
+.dim-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
 }
 
 .dim-name {
-  font-size: 18px;
-  font-weight: bold;
-  color: #2c3e50;
-  margin-bottom: 10px;
-}
-
-.dim-desc {
-  font-size: 13px;
-  color: #666;
-  line-height: 1.6;
-  margin-bottom: 15px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+  min-width: 60px;
 }
 
 .dim-formula {
-  font-size: 12px;
-  color: #2E86AB;
-  background: #f0f7ff;
-  padding: 8px;
-  border-radius: 8px;
-  font-family: monospace;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  background: var(--color-bg-hover);
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
 }
 
-.process-flow {
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
-  gap: 20px;
-  padding: 30px 0;
+.dim-note {
+  margin-top: var(--space-md);
+  padding-top: var(--space-md);
+  border-top: 1px solid var(--color-border-light);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
 }
 
-.process-step {
+/* Weight card */
+.weight-methods {
   display: flex;
   align-items: center;
-  gap: 15px;
+  gap: var(--space-md);
+  justify-content: center;
+  margin-bottom: var(--space-md);
 }
 
-.step-number {
+.method-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.method-badge {
+  width: 48px;
+  height: 28px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  color: #fff;
+}
+
+.method-badge.ahp {
+  background: var(--color-primary);
+}
+
+.method-badge.entropy {
+  background: var(--color-accent);
+}
+
+.method-plus {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--color-text-muted);
+}
+
+.method-name {
+  font-weight: 600;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+}
+
+.method-desc {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+.weight-formula {
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  padding: var(--space-md);
+  background: var(--color-bg-hover);
+  border-radius: var(--radius-md);
+}
+
+.weight-formula sub {
+  font-size: 12px;
+  color: var(--color-primary);
+}
+
+.alpha-val {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  font-weight: 400;
+}
+
+/* Industry grid */
+.industry-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-md);
+}
+
+.industry-item {
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  cursor: pointer;
+  transition: all var(--transition-base);
+  box-shadow: var(--shadow-sm);
+}
+
+.industry-item:hover {
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-2px);
+  border-color: var(--color-primary-lighter);
+}
+
+.industry-icon {
   width: 40px;
   height: 40px;
-  background: linear-gradient(135deg, #2E86AB 0%, #4ECDC4 100%);
-  color: #fff;
-  border-radius: 50%;
+  border-radius: var(--radius-sm);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: bold;
+  margin-bottom: var(--space-sm);
+}
+
+.industry-name {
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin-bottom: var(--space-md);
+  font-size: var(--font-size-base);
+}
+
+.industry-weights {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.weight-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.weight-label {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  min-width: 28px;
+}
+
+.weight-track {
+  flex: 1;
+  height: 6px;
+  background: var(--color-bg-hover);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.weight-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.6s ease;
+}
+
+.weight-pct {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  min-width: 28px;
+  text-align: right;
+}
+
+/* Flow steps */
+.flow-steps {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-sm);
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.flow-step {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.flow-num {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: var(--font-size-sm);
+  flex-shrink: 0;
+}
+
+.flow-content {
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-sm) var(--space-md);
+  min-width: 120px;
+}
+
+.flow-title {
+  font-weight: 600;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+}
+
+.flow-desc {
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+
+.flow-arrow {
+  color: var(--color-text-muted);
   font-size: 18px;
+  flex-shrink: 0;
 }
 
-.step-content {
-  text-align: center;
-  padding: 20px;
-  background: #fff;
-  border-radius: 12px;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.08);
-  min-width: 150px;
+/* Responsive */
+@media (max-width: 1024px) {
+  .hero {
+    flex-direction: column;
+  }
+  .hero-formula {
+    width: 100%;
+  }
+  .industry-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
-.step-content h4 {
-  margin: 10px 0 5px;
-  color: #2c3e50;
-}
-
-.step-content p {
-  font-size: 12px;
-  color: #666;
-  margin: 0;
-}
-
-.step-arrow {
-  color: #2E86AB;
-  font-size: 24px;
+@media (max-width: 640px) {
+  .stats-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .industry-grid {
+    grid-template-columns: 1fr;
+  }
+  .flow-steps {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .flow-arrow {
+    transform: rotate(90deg);
+    align-self: center;
+  }
 }
 </style>

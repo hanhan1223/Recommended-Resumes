@@ -1,0 +1,195 @@
+/* ============================================
+   人才简历综合优选系统 - Design System
+   Professional, clean, competition-ready
+   ============================================ */
+
+/* --- Light Theme (Default) --- */
+:root {
+  /* Primary palette - professional blue */
+  --color-primary: #2563EB;
+  --color-primary-light: #3B82F6;
+  --color-primary-lighter: #93C5FD;
+  --color-primary-bg: #EFF6FF;
+
+  /* Accent - teal for success/scores */
+  --color-accent: #0D9488;
+  --color-accent-light: #14B8A6;
+  --color-accent-bg: #F0FDFA;
+
+  /* Semantic colors */
+  --color-success: #16A34A;
+  --color-success-bg: #F0FDF4;
+  --color-warning: #D97706;
+  --color-warning-bg: #FFFBEB;
+  --color-danger: #DC2626;
+  --color-danger-bg: #FEF2F2;
+
+  /* Neutral scale */
+  --color-bg-page: #F8FAFC;
+  --color-bg-card: #FFFFFF;
+  --color-bg-elevated: #FFFFFF;
+  --color-bg-hover: #F1F5F9;
+  --color-border: #E2E8F0;
+  --color-border-light: #F1F5F9;
+  --color-text-primary: #0F172A;
+  --color-text-secondary: #475569;
+  --color-text-muted: #94A3B8;
+  --color-text-inverse: #FFFFFF;
+
+  /* Dimension colors */
+  --color-dim-education: #6366F1;
+  --color-dim-experience: #EC4899;
+  --color-dim-skill: #0EA5E9;
+  --color-dim-comprehensive: #10B981;
+
+  /* Industry colors */
+  --color-ind-ecommerce: #6366F1;
+  --color-ind-brand: #EC4899;
+  --color-ind-sales: #0EA5E9;
+  --color-ind-rd: #10B981;
+  --color-ind-production: #F59E0B;
+  --color-ind-hr: #8B5CF6;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.04);
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+
+  /* Border radius */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+
+  /* Spacing */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-2xl: 48px;
+
+  /* Typography */
+  --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  --font-mono: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+  --font-size-xs: 12px;
+  --font-size-sm: 13px;
+  --font-size-base: 14px;
+  --font-size-lg: 16px;
+  --font-size-xl: 20px;
+  --font-size-2xl: 24px;
+  --font-size-3xl: 30px;
+
+  /* Transitions */
+  --transition-fast: 0.15s ease;
+  --transition-base: 0.25s ease;
+  --transition-slow: 0.4s ease;
+
+  /* Header */
+  --header-bg: linear-gradient(135deg, #1E40AF 0%, #0D9488 100%);
+  --header-height: 56px;
+
+  /* Footer */
+  --footer-bg: #1E293B;
+  --footer-text: #94A3B8;
+}
+
+/* --- Dark Theme --- */
+html.dark {
+  --color-primary: #3B82F6;
+  --color-primary-light: #60A5FA;
+  --color-primary-lighter: #1D4ED8;
+  --color-primary-bg: rgba(59, 130, 246, 0.1);
+
+  --color-accent: #14B8A6;
+  --color-accent-light: #2DD4BF;
+  --color-accent-bg: rgba(20, 184, 166, 0.1);
+
+  --color-success: #22C55E;
+  --color-success-bg: rgba(34, 197, 94, 0.1);
+  --color-warning: #F59E0B;
+  --color-warning-bg: rgba(245, 158, 11, 0.1);
+  --color-danger: #EF4444;
+  --color-danger-bg: rgba(239, 68, 68, 0.1);
+
+  --color-bg-page: #0F172A;
+  --color-bg-card: #1E293B;
+  --color-bg-elevated: #334155;
+  --color-bg-hover: #334155;
+  --color-border: #334155;
+  --color-border-light: #1E293B;
+  --color-text-primary: #F1F5F9;
+  --color-text-secondary: #CBD5E1;
+  --color-text-muted: #64748B;
+  --color-text-inverse: #0F172A;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -2px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -4px rgba(0, 0, 0, 0.3);
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.2);
+
+  --header-bg: linear-gradient(135deg, #1E3A5F 0%, #0F766E 100%);
+  --footer-bg: #0F172A;
+  --footer-text: #64748B;
+}
+
+/* --- Element Plus Dark Mode Overrides --- */
+html.dark {
+  --el-bg-color: #1E293B;
+  --el-bg-color-overlay: #1E293B;
+  --el-bg-color-page: #0F172A;
+  --el-text-color-primary: #F1F5F9;
+  --el-text-color-regular: #CBD5E1;
+  --el-text-color-secondary: #94A3B8;
+  --el-text-color-placeholder: #64748B;
+  --el-border-color: #334155;
+  --el-border-color-light: #1E293B;
+  --el-border-color-lighter: #334155;
+  --el-fill-color: #334155;
+  --el-fill-color-light: #1E293B;
+  --el-fill-color-lighter: #0F172A;
+  --el-fill-color-blank: #1E293B;
+  --el-mask-color: rgba(15, 23, 42, 0.8);
+}
+
+/* --- Global Reset & Base --- */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: var(--font-family);
+  font-size: var(--font-size-base);
+  color: var(--color-text-primary);
+  background: var(--color-bg-page);
+  margin: 0;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* --- Utility Classes --- */
+.card {
+  background: var(--color-bg-card);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-card);
+  transition: box-shadow var(--transition-base);
+}
+
+.card:hover {
+  box-shadow: var(--shadow-md);
+}
+
+.text-primary { color: var(--color-text-primary); }
+.text-secondary { color: var(--color-text-secondary); }
+.text-muted { color: var(--color-text-muted); }
+
+.bg-page { background: var(--color-bg-page); }
+.bg-card { background: var(--color-bg-card); }
+
+/* --- ECharts Theme Consistency --- */
+.echarts-chart {
+  font-family: var(--font-family) !important;
+}

@@ -1,744 +1,483 @@
 <template>
   <div class="decision-page">
-    <h1>决策报告</h1>
-    
-    <!-- 行业选择区 -->
-    <div class="industry-section">
-      <h2>选择行业</h2>
-      <div class="industry-selector">
-        <select v-model="selectedIndustry" @change="onIndustryChange" class="industry-select">
-          <option value="">全部行业</option>
-          <option v-for="industry in industries" :key="industry.code" :value="industry.code">
-            {{ industry.name }} ({{ industry.candidate_count }}人)
-          </option>
-        </select>
-        <span class="industry-hint">选择特定行业可生成更精准的决策报告</span>
-      </div>
-    </div>
-    
-    <!-- 候选人选择 -->
-    <div class="selection-section">
-      <h2>选择候选人</h2>
-      <div class="candidate-selector">
-        <div 
-          v-for="candidate in availableCandidates" 
-          :key="candidate.id"
-          class="candidate-card"
-          :class="{ selected: selectedCandidate === candidate.id }"
-          @click="selectCandidate(candidate.id)"
-        >
-          <div class="candidate-name">{{ candidate.name }}</div>
-          <div class="candidate-score">TCI: {{ candidate.tci_score.toFixed(2) }}</div>
-          <div class="candidate-rank">排名: {{ candidate.rank }}</div>
-        </div>
-      </div>
-      
-      <div class="selection-actions">
-        <button 
-          class="btn-primary" 
-          @click="generateDecision"
-          :disabled="!selectedCandidate"
-        >
-          生成决策报告
-        </button>
-      </div>
+    <h1 class="page-title">决策报告</h1>
+
+    <!-- Filters -->
+    <div class="card" style="padding: var(--space-lg); margin-bottom: var(--space-md)">
+      <el-row :gutter="16" align="middle">
+        <el-col :span="8">
+          <div class="filter-item">
+            <label class="filter-label">行业</label>
+            <el-select v-model="selectedIndustry" placeholder="全部行业" @change="onIndustryChange" style="width: 100%">
+              <el-option value="" label="全部行业" />
+              <el-option v-for="ind in industries" :key="ind.code" :label="ind.name" :value="ind.code" />
+            </el-select>
+          </div>
+        </el-col>
+        <el-col :span="10">
+          <span class="hint-text">选择候选人生成决策报告</span>
+        </el-col>
+        <el-col :span="6" style="text-align: right">
+          <el-button type="primary" @click="generateDecision" :disabled="!selectedCandidate" :loading="loading">
+            生成报告
+          </el-button>
+        </el-col>
+      </el-row>
     </div>
 
-    <!-- 决策报告展示区 -->
-    <div v-if="decisionData" class="decision-result">
-      <h2>决策报告</h2>
-      
-      <!-- 决策概览 -->
-      <div class="overview-card">
+    <!-- Candidate Selection -->
+    <div class="card" style="padding: var(--space-lg); margin-bottom: var(--space-md)">
+      <div class="section-header">
+        <span class="section-title">选择候选人</span>
+      </div>
+      <el-row :gutter="12">
+        <el-col :span="4" v-for="c in availableCandidates" :key="c.id">
+          <div class="candidate-pick" :class="{ selected: selectedCandidate === c.id }" @click="selectCandidate(c.id)">
+            <div class="pick-name">{{ c.name }}</div>
+            <div class="pick-score">TCI: {{ c.tci_score?.toFixed(2) || '-' }}</div>
+            <div class="pick-rank">排名 #{{ c.rank }}</div>
+          </div>
+        </el-col>
+      </el-row>
+      <el-empty v-if="availableCandidates.length === 0" description="暂无候选人数据" />
+    </div>
+
+    <!-- Decision Report -->
+    <template v-if="decisionData">
+      <!-- Overview -->
+      <div class="card" style="padding: var(--space-lg); margin-bottom: var(--space-md)">
         <div class="decision-header">
-          <h3>{{ decisionData.candidate_name }}</h3>
-          <div class="decision-badge" :class="'decision-' + getDecisionClass(decisionData.decision)">
+          <span class="candidate-name">{{ decisionData.candidate_name }}</span>
+          <el-tag :type="getDecisionType(decisionData.decision)" effect="dark" size="large">
             {{ decisionData.decision }}
-          </div>
+          </el-tag>
         </div>
-        
-        <div class="metrics-row">
-          <div class="metric">
-            <span class="metric-label">置信度</span>
-            <span class="metric-value">{{ decisionData.confidence }}</span>
-          </div>
-          <div class="metric">
-            <span class="metric-label">综合得分</span>
-            <span class="metric-value">{{ decisionData.overall_score }}</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- 执行摘要 -->
-      <div class="executive-summary">
-        <h3>执行摘要</h3>
-        <div class="summary-cards">
-          <div class="summary-card risk">
-            <h4>风险评估</h4>
-            <p>{{ decisionData.executive_summary.risk_summary }}</p>
-          </div>
-          <div class="summary-card opportunity">
-            <h4>机会评估</h4>
-            <p>{{ decisionData.executive_summary.opportunity_summary }}</p>
-          </div>
-        </div>
-        
-        <div class="final-recommendation">
-          <h4>最终推荐</h4>
-          <p>{{ decisionData.executive_summary.final_recommendation }}</p>
-        </div>
-      </div>
-
-      <!-- 关键决策因素 -->
-      <div class="key-factors">
-        <h3>关键决策因素</h3>
-        <div class="factors-list">
-          <div 
-            v-for="(factor, index) in decisionData.key_factors" 
-            :key="index"
-            class="factor-card"
-            :class="'factor-' + getFactorClass(factor.type)"
-          >
-            <div class="factor-header">
-              <span class="factor-type">{{ factor.type }}</span>
-              <span class="factor-weight">权重: {{ factor.weight }}</span>
+        <el-row :gutter="16" style="margin-top: var(--space-md)">
+          <el-col :span="12">
+            <div class="metric-box">
+              <span class="metric-label">置信度</span>
+              <span class="metric-value">{{ decisionData.confidence }}</span>
             </div>
-            <div class="factor-description">{{ factor.description }}</div>
-            <div class="factor-evidence" v-if="factor.evidence.length">
-              <strong>依据:</strong>
-              <ul>
-                <li v-for="(evidence, idx) in factor.evidence" :key="idx">{{ evidence }}</li>
+          </el-col>
+          <el-col :span="12">
+            <div class="metric-box">
+              <span class="metric-label">综合得分</span>
+              <span class="metric-value">{{ decisionData.overall_score }}</span>
+            </div>
+          </el-col>
+        </el-row>
+      </div>
+
+      <!-- Executive Summary -->
+      <el-row :gutter="16" style="margin-bottom: var(--space-md)">
+        <el-col :span="12">
+          <div class="card summary-card risk-card">
+            <div class="summary-title">风险评估</div>
+            <p class="summary-text">{{ decisionData.executive_summary.risk_summary }}</p>
+          </div>
+        </el-col>
+        <el-col :span="12">
+          <div class="card summary-card opportunity-card">
+            <div class="summary-title">机会评估</div>
+            <p class="summary-text">{{ decisionData.executive_summary.opportunity_summary }}</p>
+          </div>
+        </el-col>
+      </el-row>
+
+      <div class="card" style="padding: var(--space-lg); margin-bottom: var(--space-md)">
+        <div class="final-recommendation">
+          <div class="final-title">最终推荐</div>
+          <p class="final-text">{{ decisionData.executive_summary.final_recommendation }}</p>
+        </div>
+      </div>
+
+      <!-- Key Factors -->
+      <div class="card" style="padding: var(--space-lg); margin-bottom: var(--space-md)">
+        <div class="section-header">
+          <span class="section-title">关键决策因素</span>
+        </div>
+        <el-row :gutter="12">
+          <el-col :span="12" v-for="(factor, i) in decisionData.key_factors" :key="i">
+            <div class="factor-card" :class="`factor-${getFactorClass(factor.type)}`">
+              <div class="factor-header">
+                <span class="factor-type">{{ factor.type }}</span>
+                <span class="factor-weight">权重: {{ factor.weight }}</span>
+              </div>
+              <p class="factor-desc">{{ factor.description }}</p>
+              <div v-if="factor.evidence?.length" class="factor-evidence">
+                <span class="evidence-label">依据:</span>
+                <ul><li v-for="(e, j) in factor.evidence" :key="j">{{ e }}</li></ul>
+              </div>
+            </div>
+          </el-col>
+        </el-row>
+      </div>
+
+      <!-- Action Items -->
+      <div class="card" style="padding: var(--space-lg); margin-bottom: var(--space-md)">
+        <div class="section-header">
+          <span class="section-title">行动建议</span>
+        </div>
+        <el-row :gutter="16">
+          <el-col :span="12">
+            <div class="action-block">
+              <div class="action-title">建议行动</div>
+              <ul class="action-list">
+                <li v-for="(action, i) in decisionData.action_items.suggested_actions" :key="i">{{ action }}</li>
               </ul>
             </div>
-          </div>
-        </div>
+          </el-col>
+          <el-col :span="12">
+            <div class="action-block">
+              <div class="action-title">面试重点</div>
+              <ul class="action-list">
+                <li v-for="(focus, i) in decisionData.action_items.interview_focus" :key="i">{{ focus }}</li>
+              </ul>
+            </div>
+          </el-col>
+        </el-row>
       </div>
 
-      <!-- 行动建议 -->
-      <div class="action-items">
-        <h3>行动建议</h3>
-        <div class="action-sections">
-          <div class="action-section">
-            <h4>建议行动</h4>
-            <ul class="action-list">
-              <li v-for="(action, index) in decisionData.action_items.suggested_actions" :key="index">
-                {{ action }}
-              </li>
-            </ul>
-          </div>
-          <div class="action-section">
-            <h4>面试重点</h4>
-            <ul class="action-list">
-              <li v-for="(focus, index) in decisionData.action_items.interview_focus" :key="index">
-                {{ focus }}
-              </li>
-            </ul>
-          </div>
-        </div>
+      <!-- Export -->
+      <div style="text-align: center; padding: var(--space-md)">
+        <el-button type="success" @click="exportReport('json')">导出JSON</el-button>
+        <el-button type="primary" @click="exportReport('pdf')">导出PDF</el-button>
       </div>
+    </template>
 
-      <!-- 导出按钮 -->
-      <div class="export-section">
-        <button class="btn-export" @click="exportReport('json')">
-          导出JSON报告
-        </button>
-        <button class="btn-export" @click="exportReport('pdf')">
-          导出PDF报告
-        </button>
-      </div>
-    </div>
-
-    <!-- 加载状态 -->
+    <!-- Loading -->
     <div v-if="loading" class="loading-overlay">
-      <div class="loading-spinner"></div>
+      <el-icon class="loading-icon" :size="40"><Loading /></el-icon>
       <p>正在生成决策报告...</p>
     </div>
   </div>
 </template>
 
-<script>
+<script setup>
 import { ref, onMounted } from 'vue'
+import { ElMessage } from 'element-plus'
+import { Loading } from '@element-plus/icons-vue'
 import axios from 'axios'
 
-export default {
-  name: 'Decision',
-  setup() {
-    const availableCandidates = ref([])
-    const selectedCandidate = ref(null)
-    const decisionData = ref(null)
-    const loading = ref(false)
-    const industries = ref([])
-    const selectedIndustry = ref('')
+const availableCandidates = ref([])
+const selectedCandidate = ref(null)
+const decisionData = ref(null)
+const loading = ref(false)
+const industries = ref([])
+const selectedIndustry = ref('')
 
-    // 获取行业列表
-    const fetchIndustries = async () => {
-      try {
-        const response = await axios.get('/api/industries')
-        if (response.data.status === 'success') {
-          industries.value = response.data.industries
-        }
-      } catch (error) {
-        console.error('获取行业列表失败:', error)
-      }
-    }
+const fetchIndustries = async () => {
+  try {
+    const res = await axios.get('/api/industries')
+    if (res.data.status === 'success') industries.value = res.data.industries
+  } catch (e) { console.error('获取行业列表失败:', e) }
+}
 
-    // 获取可用候选人列表
-    const fetchCandidates = async () => {
-      try {
-        const params = selectedIndustry.value ? { industry: selectedIndustry.value } : {}
-        const response = await axios.get('/api/comparison/available-candidates', { params })
-        if (response.data.status === 'success') {
-          availableCandidates.value = response.data.candidates
-          // 清空已选择的候选人（因为行业变了）
-          selectedCandidate.value = null
-          decisionData.value = null
-        }
-      } catch (error) {
-        console.error('获取候选人列表失败:', error)
-        alert('获取候选人列表失败')
-      }
-    }
-
-    // 行业切换处理
-    const onIndustryChange = () => {
-      fetchCandidates()
-    }
-
-    // 选择候选人
-    const selectCandidate = (id) => {
-      selectedCandidate.value = id
+const fetchCandidates = async () => {
+  try {
+    const params = selectedIndustry.value ? { industry: selectedIndustry.value } : {}
+    const res = await axios.get('/api/comparison/available-candidates', { params })
+    if (res.data.status === 'success') {
+      availableCandidates.value = res.data.candidates
+      selectedCandidate.value = null
       decisionData.value = null
     }
-
-    // 生成决策报告
-    const generateDecision = async () => {
-      if (!selectedCandidate.value) {
-        alert('请选择候选人')
-        return
-      }
-
-      loading.value = true
-      try {
-        const response = await axios.post('/api/decision/summary', {
-          resume_id: selectedCandidate.value,
-          job_requirements: null
-        })
-        
-        if (response.data.status === 'success') {
-          decisionData.value = response.data.decision_summary
-        }
-      } catch (error) {
-        console.error('生成决策报告失败:', error)
-        alert('生成决策报告失败: ' + (error.response?.data?.detail || '未知错误'))
-      } finally {
-        loading.value = false
-      }
-    }
-
-    // 获取决策样式类
-    const getDecisionClass = (decision) => {
-      const map = {
-        '强烈推荐': 'strongly-recommend',
-        '推荐': 'recommend',
-        '可以考虑': 'consider',
-        '不推荐': 'not-recommend'
-      }
-      return map[decision] || 'consider'
-    }
-
-    // 获取因素样式类
-    const getFactorClass = (type) => {
-      const map = {
-        '优势': 'advantage',
-        '劣势': 'disadvantage',
-        '风险': 'risk',
-        '机会': 'opportunity'
-      }
-      return map[type] || 'other'
-    }
-
-    // 导出报告
-    const exportReport = async (format) => {
-      try {
-        const response = await axios.post('/api/report/export', {
-          report_type: 'decision',
-          data: decisionData.value,
-          format: format
-        })
-
-        if (response.data.status === 'success') {
-          let blob
-          if (format === 'json') {
-            // JSON格式：data是对象，需要stringify
-            blob = new Blob([JSON.stringify(response.data.data, null, 2)], {
-              type: 'application/json'
-            })
-          } else if (format === 'excel') {
-            // Excel格式：data是base64字符串，需要解码
-            const binaryString = atob(response.data.data)
-            const bytes = new Uint8Array(binaryString.length)
-            for (let i = 0; i < binaryString.length; i++) {
-              bytes[i] = binaryString.charCodeAt(i)
-            }
-            blob = new Blob([bytes], {
-              type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-            })
-          } else if (format === 'pdf') {
-            // PDF格式：data是base64字符串，需要解码
-            const binaryString = atob(response.data.data)
-            const bytes = new Uint8Array(binaryString.length)
-            for (let i = 0; i < binaryString.length; i++) {
-              bytes[i] = binaryString.charCodeAt(i)
-            }
-            blob = new Blob([bytes], {
-              type: 'application/pdf'
-            })
-          } else {
-            // 其他格式
-            blob = new Blob([response.data.data], {
-              type: 'application/octet-stream'
-            })
-          }
-          const url = window.URL.createObjectURL(blob)
-          const link = document.createElement('a')
-          link.href = url
-          link.download = response.data.filename
-          link.click()
-          window.URL.revokeObjectURL(url)
-        }
-      } catch (error) {
-        console.error('导出失败:', error)
-        alert('导出失败')
-      }
-    }
-
-    onMounted(() => {
-      fetchIndustries()
-      fetchCandidates()
-    })
-
-    return {
-      availableCandidates,
-      selectedCandidate,
-      decisionData,
-      loading,
-      industries,
-      selectedIndustry,
-      onIndustryChange,
-      selectCandidate,
-      generateDecision,
-      getDecisionClass,
-      getFactorClass,
-      exportReport
-    }
-  }
+  } catch (e) { ElMessage.error('获取候选人列表失败') }
 }
+
+const onIndustryChange = () => fetchCandidates()
+const selectCandidate = (id) => { selectedCandidate.value = id; decisionData.value = null }
+
+const generateDecision = async () => {
+  if (!selectedCandidate.value) { ElMessage.warning('请选择候选人'); return }
+  loading.value = true
+  try {
+    const res = await axios.post('/api/decision/summary', { resume_id: selectedCandidate.value, job_requirements: null })
+    if (res.data.status === 'success') decisionData.value = res.data.decision_summary
+  } catch (e) { ElMessage.error('生成决策报告失败: ' + (e.response?.data?.detail || '未知错误')) }
+  finally { loading.value = false }
+}
+
+const getDecisionType = (decision) => {
+  const map = { '强烈推荐': 'success', '推荐': 'primary', '可以考虑': 'warning', '不推荐': 'danger' }
+  return map[decision] || 'info'
+}
+
+const getFactorClass = (type) => {
+  const map = { '优势': 'advantage', '劣势': 'disadvantage', '风险': 'risk', '机会': 'opportunity' }
+  return map[type] || 'other'
+}
+
+const exportReport = async (format) => {
+  try {
+    const res = await axios.post('/api/report/export', { report_type: 'decision', data: decisionData.value, format })
+    if (res.data.status === 'success') {
+      let blob
+      if (format === 'json') blob = new Blob([JSON.stringify(res.data.data, null, 2)], { type: 'application/json' })
+      else {
+        const bytes = atob(res.data.data)
+        const arr = new Uint8Array(bytes.length)
+        for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i)
+        blob = new Blob([arr], { type: format === 'pdf' ? 'application/pdf' : 'application/octet-stream' })
+      }
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url; link.download = res.data.filename; link.click()
+      URL.revokeObjectURL(url)
+      ElMessage.success('导出成功')
+    }
+  } catch (e) { ElMessage.error('导出失败') }
+}
+
+onMounted(() => { fetchIndustries(); fetchCandidates() })
 </script>
 
 <style scoped>
 .decision-page {
-  padding: 20px;
   max-width: 1200px;
   margin: 0 auto;
+  position: relative;
 }
 
-h1 {
-  text-align: center;
-  color: #333;
-  margin-bottom: 30px;
+.page-title {
+  font-size: var(--font-size-2xl);
+  font-weight: 700;
+  color: var(--color-text-primary);
+  margin: 0 0 var(--space-lg);
 }
 
-h2 {
-  color: #444;
-  margin-bottom: 20px;
-  border-bottom: 2px solid #007bff;
-  padding-bottom: 10px;
-}
-
-h3 {
-  color: #555;
-  margin: 20px 0 15px;
-}
-
-h4 {
-  color: #666;
-  margin-bottom: 10px;
-}
-
-/* 行业选择区样式 */
-.industry-section {
-  background: #e3f2fd;
-  padding: 20px;
-  border-radius: 8px;
-  margin-bottom: 20px;
-  border-left: 4px solid #007bff;
-}
-
-.industry-selector {
+.filter-item {
   display: flex;
   align-items: center;
-  gap: 15px;
-  flex-wrap: wrap;
+  gap: var(--space-sm);
 }
 
-.industry-select {
-  padding: 10px 15px;
-  font-size: 16px;
-  border: 2px solid #007bff;
-  border-radius: 6px;
-  background: white;
-  color: #333;
+.filter-label {
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+
+.hint-text {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.section-header {
+  margin-bottom: var(--space-md);
+}
+
+.section-title {
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.candidate-pick {
+  background: var(--color-bg-card);
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-sm) var(--space-md);
   cursor: pointer;
-  min-width: 200px;
-}
-
-.industry-select:focus {
-  outline: none;
-  border-color: #0056b3;
-  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
-}
-
-.industry-hint {
-  color: #666;
-  font-size: 14px;
-}
-
-/* 选择区样式 */
-.selection-section {
-  background: #f8f9fa;
-  padding: 20px;
-  border-radius: 8px;
-  margin-bottom: 30px;
-}
-
-.candidate-selector {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 15px;
-  margin-bottom: 20px;
-}
-
-.candidate-card {
-  background: white;
-  border: 2px solid #ddd;
-  border-radius: 8px;
-  padding: 15px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.candidate-card:hover {
-  border-color: #007bff;
-  transform: translateY(-2px);
-}
-
-.candidate-card.selected {
-  border-color: #28a745;
-  background: #f0fff4;
-}
-
-.candidate-name {
-  font-weight: bold;
-  margin-bottom: 5px;
-}
-
-.candidate-score {
-  color: #007bff;
-  font-size: 14px;
-}
-
-.candidate-rank {
-  color: #666;
-  font-size: 12px;
-}
-
-.selection-actions {
+  transition: all var(--transition-fast);
+  margin-bottom: var(--space-sm);
   text-align: center;
 }
 
-/* 按钮样式 */
-.btn-primary, .btn-export {
-  padding: 12px 24px;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 14px;
-  transition: all 0.3s ease;
+.candidate-pick:hover {
+  border-color: var(--color-primary-lighter);
 }
 
-.btn-primary {
-  background: #007bff;
-  color: white;
+.candidate-pick.selected {
+  border-color: var(--color-success);
+  background: var(--color-success-bg);
 }
 
-.btn-primary:hover:not(:disabled) {
-  background: #0056b3;
+.pick-name {
+  font-weight: 600;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
 }
 
-.btn-primary:disabled {
-  background: #ccc;
-  cursor: not-allowed;
+.pick-score {
+  font-size: var(--font-size-xs);
+  color: var(--color-primary);
 }
 
-.btn-export {
-  background: #28a745;
-  color: white;
-  margin: 5px;
-}
-
-.btn-export:hover {
-  background: #218838;
-}
-
-/* 概览卡片样式 */
-.overview-card {
-  background: white;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  padding: 20px;
-  margin-bottom: 20px;
+.pick-rank {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
 }
 
 .decision-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 15px;
 }
 
-.decision-header h3 {
-  margin: 0;
-  font-size: 24px;
+.candidate-name {
+  font-size: var(--font-size-2xl);
+  font-weight: 700;
+  color: var(--color-text-primary);
 }
 
-.decision-badge {
-  padding: 8px 16px;
-  border-radius: 4px;
-  font-weight: bold;
-  font-size: 16px;
-}
-
-.decision-strongly-recommend {
-  background: #28a745;
-  color: white;
-}
-
-.decision-recommend {
-  background: #17a2b8;
-  color: white;
-}
-
-.decision-consider {
-  background: #ffc107;
-  color: #333;
-}
-
-.decision-not-recommend {
-  background: #dc3545;
-  color: white;
-}
-
-.metrics-row {
-  display: flex;
-  gap: 30px;
-}
-
-.metric {
+.metric-box {
   text-align: center;
+  padding: var(--space-md);
+  background: var(--color-bg-hover);
+  border-radius: var(--radius-md);
 }
 
 .metric-label {
   display: block;
-  font-size: 14px;
-  color: #666;
-  margin-bottom: 5px;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-xs);
 }
 
 .metric-value {
   font-size: 24px;
-  font-weight: bold;
-  color: #007bff;
-}
-
-/* 执行摘要样式 */
-.executive-summary {
-  margin: 20px 0;
-}
-
-.summary-cards {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 20px;
-  margin-bottom: 20px;
+  font-weight: 700;
+  color: var(--color-primary);
 }
 
 .summary-card {
-  background: white;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  padding: 15px;
+  padding: var(--space-lg);
+  height: 100%;
 }
 
-.summary-card.risk {
-  border-left: 4px solid #dc3545;
+.summary-card.risk-card {
+  border-left: 4px solid var(--color-danger);
 }
 
-.summary-card.opportunity {
-  border-left: 4px solid #28a745;
+.summary-card.opportunity-card {
+  border-left: 4px solid var(--color-success);
 }
 
-.summary-card h4 {
-  margin-top: 0;
-  color: #333;
+.summary-title {
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin-bottom: var(--space-sm);
+}
+
+.summary-text {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  line-height: 1.7;
+  margin: 0;
 }
 
 .final-recommendation {
-  background: #e7f3ff;
-  border: 1px solid #007bff;
-  border-radius: 8px;
-  padding: 15px;
+  background: var(--color-primary-bg);
+  padding: var(--space-lg);
+  border-radius: var(--radius-md);
+  border-left: 4px solid var(--color-primary);
 }
 
-.final-recommendation h4 {
-  color: #007bff;
-  margin-top: 0;
+.final-title {
+  font-weight: 600;
+  color: var(--color-primary);
+  margin-bottom: var(--space-sm);
 }
 
-/* 关键因素样式 */
-.key-factors {
-  margin: 20px 0;
-}
-
-.factors-list {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 15px;
+.final-text {
+  font-size: var(--font-size-base);
+  color: var(--color-text-primary);
+  line-height: 1.7;
+  margin: 0;
 }
 
 .factor-card {
-  background: white;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  padding: 15px;
-  border-left: 4px solid #ccc;
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+  margin-bottom: var(--space-sm);
+  border-left: 4px solid var(--color-border);
 }
 
-.factor-advantage {
-  border-left-color: #28a745;
-}
-
-.factor-disadvantage {
-  border-left-color: #ffc107;
-}
-
-.factor-risk {
-  border-left-color: #dc3545;
-}
-
-.factor-opportunity {
-  border-left-color: #17a2b8;
-}
+.factor-card.factor-advantage { border-left-color: var(--color-success); }
+.factor-card.factor-disadvantage { border-left-color: var(--color-warning); }
+.factor-card.factor-risk { border-left-color: var(--color-danger); }
+.factor-card.factor-opportunity { border-left-color: var(--color-primary); }
 
 .factor-header {
   display: flex;
   justify-content: space-between;
-  margin-bottom: 10px;
+  margin-bottom: var(--space-sm);
 }
 
 .factor-type {
-  font-weight: bold;
-  color: #333;
+  font-weight: 600;
+  color: var(--color-text-primary);
 }
 
 .factor-weight {
-  font-size: 12px;
-  color: #666;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
 }
 
-.factor-description {
-  margin-bottom: 10px;
-  color: #555;
+.factor-desc {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  margin: 0 0 var(--space-sm);
 }
 
-.factor-evidence {
-  font-size: 13px;
-  color: #666;
+.evidence-label {
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  color: var(--color-text-primary);
 }
 
 .factor-evidence ul {
-  margin: 5px 0;
-  padding-left: 20px;
+  margin: 4px 0 0;
+  padding-left: 16px;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
 }
 
-/* 行动建议样式 */
-.action-items {
-  margin: 20px 0;
+.action-block {
+  background: var(--color-bg-hover);
+  padding: var(--space-md);
+  border-radius: var(--radius-md);
 }
 
-.action-sections {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 20px;
-}
-
-.action-section {
-  background: white;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  padding: 15px;
+.action-title {
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin-bottom: var(--space-sm);
 }
 
 .action-list {
   margin: 0;
-  padding-left: 20px;
+  padding-left: 16px;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
 }
 
 .action-list li {
-  margin-bottom: 8px;
-  color: #555;
+  margin-bottom: var(--space-xs);
 }
 
-/* 导出区样式 */
-.export-section {
-  margin-top: 30px;
-  text-align: center;
-  padding: 20px;
-  background: #f8f9fa;
-  border-radius: 8px;
-}
-
-/* 加载样式 */
 .loading-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(255,255,255,0.9);
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   z-index: 1000;
+  color: #fff;
 }
 
-.loading-spinner {
-  width: 50px;
-  height: 50px;
-  border: 4px solid #f3f3f3;
-  border-top: 4px solid #007bff;
-  border-radius: 50%;
+.loading-icon {
   animation: spin 1s linear infinite;
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-.loading-overlay p {
-  margin-top: 20px;
-  color: #666;
-  font-size: 16px;
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 </style>

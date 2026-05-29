@@ -54,6 +54,7 @@ class ResumeParser:
         self.config = self._load_config()
         self._init_entity_patterns()
         self._init_industry_keywords()
+        self._init_jieba()
 
     def _load_config(self) -> Dict:
         """加载配置文件"""
@@ -165,6 +166,99 @@ class ResumeParser:
             '人力资源': ['HR', 'HRBP', 'HRD', '招聘', '薪酬', '绩效', '人力资源总监'],
             '电商': ['电商', '电子商务', '淘宝', '天猫', '京东', '拼多多', 'GMV']
         }
+
+    def _init_jieba(self):
+        """初始化 jieba 自定义词典，增强简历领域实体识别"""
+        try:
+            import jieba.posseg as pseg
+            self._jieba_available = True
+
+            # 公司/组织后缀
+            for word in ['有限公司', '股份有限公司', '集团', '科技', '网络科技', '实业',
+                         '科技股份', '信息科技', '互联网', '电子商务']:
+                jieba.add_word(word, freq=9999, tag='nt')
+
+            # 职位名称
+            for word in ['电商运营', '品牌总监', '销售总监', '研发总监', '生产总监',
+                         '人力资源总监', '首席科学家', '技术总监', 'CTO', 'CEO', 'COO',
+                         'CFO', 'CMO', 'HRD', 'HRBP', '产品经理', '项目经理',
+                         '架构师', '全栈工程师', '前端工程师', '后栈工程师',
+                         '精益生产', '车间主任', '副厂长', '合伙人', '联合创始人']:
+                jieba.add_word(word, freq=9999, tag='n')
+
+            # 技能关键词
+            for word in ['数据分析', '机器学习', '深度学习', '人工智能', '大数据',
+                         '供应链管理', '项目管理', '质量管理', '成本控制',
+                         '品牌策划', '市场营销', '数字营销', '内容营销',
+                         '电商运营', '直播运营', '短视频', '新媒体运营',
+                         'Python', 'Java', 'JavaScript', 'React', 'Vue',
+                         'MySQL', 'Redis', 'Docker', 'Kubernetes']:
+                jieba.add_word(word, freq=9999, tag='n')
+
+            # 预加载词典
+            jieba.initialize()
+        except ImportError:
+            self._jieba_available = False
+
+    def _jieba_ner_extract(self, text: str) -> Dict:
+        """
+        使用 jieba 词性标注进行命名实体识别（辅助增强）
+
+        Args:
+            text: 简历文本
+
+        Returns:
+            提取的实体字典
+        """
+        import jieba.posseg as pseg
+
+        entities = {
+            'companies': [],
+            'schools': [],
+            'positions': [],
+            'skills': []
+        }
+
+        # 词性标注
+        words = pseg.cut(text)
+
+        for word, flag in words:
+            word = word.strip()
+            if not word or len(word) < 2:
+                continue
+
+            # nt=机构名 → 公司名候选
+            if flag == 'nt' and len(word) >= 3:
+                # 过滤掉常见非公司词
+                if not any(kw in word for kw in ['有限公司', '公司', '集团', '科技', '大学', '学院']):
+                    continue
+                if word not in entities['companies']:
+                    entities['companies'].append(word)
+
+            # n=名词 在"熟悉/精通/掌握/擅长"附近 → 技能候选
+            if flag.startswith('n') and len(word) >= 2:
+                # 检查是否在技能关键词附近
+                for kw in ['熟悉', '精通', '掌握', '擅长', '了解']:
+                    if kw in text:
+                        kw_pos = text.find(kw)
+                        word_pos = text.find(word, max(0, kw_pos - 5))
+                        if word_pos != -1 and word_pos - kw_pos < 30:
+                            if word not in entities['skills']:
+                                entities['skills'].append(word)
+                            break
+
+        # 基于上下文的职位提取
+        position_keywords = ['总监', '经理', '主管', '工程师', '架构师', '分析师',
+                             '总裁', '总经理', 'CEO', 'CTO', 'VP', '合伙人', '创始人']
+        for kw in position_keywords:
+            pattern = r'([一-龥A-Z]{2,8})' + kw
+            matches = re.findall(pattern, text)
+            for match in matches:
+                position = match + kw
+                if position not in entities['positions'] and len(position) >= 3:
+                    entities['positions'].append(position)
+
+        return entities
 
     def read_file(self, file_path: str) -> str:
         """
@@ -586,7 +680,14 @@ class ResumeParser:
         return achievements
 
     def extract_entities(self, text: str) -> Dict:
-        """提取命名实体"""
+        """
+        提取命名实体（混合式 AI：规则正则 + jieba NLP）
+
+        采用两阶段策略：
+        1. 正则表达式提取（高精度，优先）
+        2. jieba 词性标注增强（高召回，补充）
+        3. 合并去重
+        """
         entities = {
             'companies': [],
             'schools': [],
@@ -670,6 +771,29 @@ class ResumeParser:
                 cert_name = match + cert
                 if cert_name not in entities['certifications']:
                     entities['certifications'].append(cert_name)
+
+        # ========== jieba NLP 增强（第二阶段） ==========
+        if getattr(self, '_jieba_available', False):
+            try:
+                jieba_entities = self._jieba_ner_extract(text)
+
+                # 合并公司名：regex 优先，jieba 补充
+                for company in jieba_entities.get('companies', []):
+                    if company not in entities['companies']:
+                        entities['companies'].append(company)
+
+                # 合并职位：regex 优先，jieba 补充
+                for position in jieba_entities.get('positions', []):
+                    if position not in entities['positions']:
+                        entities['positions'].append(position)
+
+                # 合并技能：regex 优先，jieba 补充
+                for skill in jieba_entities.get('skills', []):
+                    if skill not in entities['skills']:
+                        entities['skills'].append(skill)
+
+            except Exception as e:
+                pass  # jieba 增强失败不影响主流程
 
         return entities
 

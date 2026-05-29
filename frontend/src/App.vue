@@ -1,53 +1,41 @@
 <template>
   <div class="app-container">
     <el-container>
-      <!-- 顶部导航 -->
-      <el-header class="app-header">
+      <!-- Header -->
+      <el-header class="app-header" height="var(--header-height)">
         <div class="header-content">
-          <div class="logo">
-            <el-icon size="24" color="#fff"><Document /></el-icon>
-            <span class="title">人才简历优选系统</span>
+          <div class="logo" @click="$router.push('/')">
+            <div class="logo-icon">
+              <el-icon size="20"><DataAnalysis /></el-icon>
+            </div>
+            <span class="logo-text">人才简历优选系统</span>
           </div>
-          <div class="nav-menu">
-            <el-menu
-              :default-active="activeRoute"
-              mode="horizontal"
-              background-color="transparent"
-              text-color="#fff"
-              active-text-color="#ffd04b"
-              :ellipsis="false"
-              router
+
+          <nav class="nav-main">
+            <router-link
+              v-for="item in navItems"
+              :key="item.path"
+              :to="item.path"
+              class="nav-link"
+              :class="{ active: isActive(item.path) }"
             >
-              <el-menu-item index="/">
-                <el-icon><HomeFilled /></el-icon>首页
-              </el-menu-item>
-              <el-menu-item index="/upload">
-                <el-icon><UploadFilled /></el-icon>上传
-              </el-menu-item>
-              <el-menu-item index="/ranking">
-                <el-icon><Trophy /></el-icon>排名
-              </el-menu-item>
-              <el-menu-item index="/analysis">
-                <el-icon><DataAnalysis /></el-icon>分析
-              </el-menu-item>
-              <el-menu-item index="/qa">
-                <el-icon><ChatDotRound /></el-icon>问答
-              </el-menu-item>
-              <el-menu-item index="/comparison">
-                <el-icon><ScaleToOriginal /></el-icon>对比
-              </el-menu-item>
-              <el-menu-item index="/recommendation">
-                <el-icon><List /></el-icon>推荐
-              </el-menu-item>
-              <el-menu-item index="/decision">
-                <el-icon><DocumentChecked /></el-icon>决策
-              </el-menu-item>
-            </el-menu>
+              <el-icon :size="16"><component :is="item.icon" /></el-icon>
+              <span>{{ item.label }}</span>
+            </router-link>
+          </nav>
+
+          <div class="header-actions">
+            <button class="theme-toggle" @click="themeStore.toggle()" :title="themeStore.isDark ? '切换浅色' : '切换深色'">
+              <el-icon :size="18">
+                <Sunny v-if="themeStore.isDark" />
+                <Moon v-else />
+              </el-icon>
+            </button>
           </div>
         </div>
       </el-header>
 
-      <!-- 主内容区 -->
+      <!-- Main Content -->
       <el-main class="app-main">
         <router-view v-slot="{ Component }">
           <transition name="fade" mode="out-in">
@@ -56,33 +44,58 @@
         </router-view>
       </el-main>
 
-      <!-- 底部 -->
-      <el-footer class="app-footer">
-        <p>人才简历综合优选系统 © 2024 | 基于AHP+熵权法的多维度评分模型</p>
+      <!-- Footer -->
+      <el-footer class="app-footer" height="40px">
+        <span>人才简历综合优选系统 &copy; 2026 | D-TCI + AHP-熵权法</span>
       </el-footer>
     </el-container>
   </div>
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { onMounted } from 'vue'
 import { useRoute } from 'vue-router'
-import { Document, HomeFilled, UploadFilled, Trophy, DataAnalysis, ChatDotRound, ScaleToOriginal, List, DocumentChecked } from '@element-plus/icons-vue'
+import { useThemeStore } from '@/stores/theme'
+import { DataAnalysis, UploadFilled, Trophy, PieChart, Sunny, Moon } from '@element-plus/icons-vue'
 
 const route = useRoute()
-const activeRoute = computed(() => route.path)
+const themeStore = useThemeStore()
+
+const navItems = [
+  { path: '/upload', label: '简历上传', icon: 'UploadFilled' },
+  { path: '/ranking', label: '排名看板', icon: 'Trophy' },
+  { path: '/analysis', label: '数据分析', icon: 'PieChart' },
+  { path: '/comparison', label: '候选人对比', icon: 'Connection' },
+  { path: '/recommendation', label: '智能推荐', icon: 'MagicStick' },
+  { path: '/decision', label: '决策报告', icon: 'Document' },
+  { path: '/qa', label: '智能问答', icon: 'ChatDotRound' }
+]
+
+const isActive = (path) => {
+  if (path === '/ranking') return route.path === '/ranking' || route.path.startsWith('/candidate')
+  return route.path === path
+}
+
+onMounted(() => {
+  themeStore.init()
+})
 </script>
 
 <style scoped>
 .app-container {
   min-height: 100vh;
-  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  background: var(--color-bg-page);
 }
 
 .app-header {
-  background: linear-gradient(135deg, #2E86AB 0%, #4ECDC4 100%);
+  background: var(--header-bg);
   padding: 0;
-  height: 56px !important;
+  display: flex;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
 }
 
 .header-content {
@@ -90,78 +103,134 @@ const activeRoute = computed(() => route.path)
   align-items: center;
   justify-content: space-between;
   height: 100%;
-  padding: 0 16px;
-  max-width: 1600px;
+  padding: 0 var(--space-lg);
+  max-width: 1400px;
   margin: 0 auto;
+  width: 100%;
 }
 
 .logo {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-sm);
+  cursor: pointer;
   flex-shrink: 0;
 }
 
-.logo .title {
-  font-size: 16px;
-  font-weight: bold;
+.logo-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   color: #fff;
-  letter-spacing: 1px;
-  white-space: nowrap;
 }
 
-.nav-menu {
-  flex: 1;
+.logo-text {
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  color: #fff;
+  letter-spacing: 0.5px;
+}
+
+.nav-main {
   display: flex;
-  justify-content: flex-end;
-  overflow: visible;
+  align-items: center;
+  gap: var(--space-xs);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.nav-main::-webkit-scrollbar {
+  display: none;
 }
 
-.nav-menu :deep(.el-menu) {
-  border-bottom: none;
-  background: transparent !important;
+.nav-link {
   display: flex;
-  flex-wrap: nowrap;
-}
-
-.nav-menu :deep(.el-menu-item) {
-  font-size: 13px;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: var(--radius-sm);
+  color: rgba(255, 255, 255, 0.75);
+  text-decoration: none;
+  font-size: var(--font-size-sm);
   font-weight: 500;
-  padding: 0 14px !important;
-  height: 56px;
-  line-height: 56px;
+  transition: all var(--transition-fast);
 }
 
-.nav-menu :deep(.el-menu-item .el-icon) {
-  margin-right: 4px;
-  font-size: 16px;
+.nav-link:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.nav-link.active {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.theme-toggle {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-sm);
+  border: none;
+  background: rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.85);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-fast);
+}
+
+.theme-toggle:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
 }
 
 .app-main {
-  padding: 16px 20px;
-  min-height: calc(100vh - 112px);
+  padding: var(--space-lg);
+  min-height: calc(100vh - var(--header-height) - 40px);
+  max-width: 1400px;
+  margin: 0 auto;
+  width: 100%;
 }
 
 .app-footer {
-  background: #2c3e50;
-  color: #fff;
+  background: var(--footer-bg);
+  color: var(--footer-text);
   text-align: center;
-  line-height: 48px;
-  height: 48px !important;
+  line-height: 40px;
+  font-size: var(--font-size-xs);
 }
 
-.app-footer p {
-  margin: 0;
-  font-size: 13px;
-}
-
+/* Transitions */
 .fade-enter-active,
 .fade-leave-active {
-  transition: opacity 0.3s ease;
+  transition: opacity 0.2s ease;
 }
 
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .nav-link span {
+    display: none;
+  }
+  .logo-text {
+    font-size: var(--font-size-base);
+  }
+  .app-main {
+    padding: var(--space-md);
+  }
 }
 </style>

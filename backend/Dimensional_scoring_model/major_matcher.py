@@ -86,42 +86,81 @@ class MajorMatcher:
     def __init__(self):
         self.vectorizer = None
 
+    # 行业与专业大类的交叉映射权重
+    CROSS_DOMAIN_BONUS = {
+        ("技术类", "研发类"): 0.85,
+        ("研发类", "技术类"): 0.85,
+        ("电商类", "品牌市场类"): 0.70,
+        ("品牌市场类", "电商类"): 0.70,
+        ("电商类", "销售类"): 0.65,
+        ("销售类", "电商类"): 0.65,
+        ("人力资源类", "品牌市场类"): 0.55,
+        ("生产类", "技术类"): 0.60,
+        ("技术类", "生产类"): 0.60,
+        ("财务类", "人力资源类"): 0.50,
+    }
+
     def calculate_major_similarity(self, major: str, job_type: str) -> float:
         """
-        计算专业与岗位类型的余弦相似度
+        计算专业与岗位类型的连续匹配度
+
+        使用多级匹配策略：
+        1. 精确专业名称匹配 → 0.90-0.95
+        2. 关键词匹配 → 0.70-0.85
+        3. 跨领域交叉匹配 → 0.50-0.65
+        4. 无匹配 → 0.10-0.30
 
         Args:
             major: 专业名称
             job_type: 岗位类型（technical, management, sales 等）
 
         Returns:
-            相似度分数 (0-1 之间)
+            相似度分数 (0.10-0.95 之间)
         """
         if not major or not job_type:
-            return 0.0
+            return 0.10
 
         job_category = self._map_job_type_to_category(job_type)
 
         if job_category not in self.MAJOR_JOB_MAPPING:
-            return 0.5
+            return 0.50
 
         category_info = self.MAJOR_JOB_MAPPING[job_category]
         major_keywords = category_info["keywords"]
         major_list = category_info["majors"]
-
         major_lower = major.lower()
 
-        # 关键词匹配
+        # Level 1: 精确专业名称匹配 (0.90-0.95)
+        for known_major in major_list:
+            known_lower = known_major.lower()
+            if known_lower == major_lower:
+                return 0.95  # 完全匹配
+            if known_lower in major_lower or major_lower in known_lower:
+                return 0.90  # 包含匹配
+
+        # Level 2: 关键词匹配 (0.70-0.85)
+        keyword_matches = 0
         for keyword in major_keywords:
             if keyword.lower() in major_lower:
-                return 0.8
+                keyword_matches += 1
 
-        # 专业名称匹配
-        for known_major in major_list:
-            if known_major.lower() in major_lower or major_lower in known_major.lower():
-                return 0.9
+        if keyword_matches >= 2:
+            return 0.85  # 多关键词匹配
+        if keyword_matches == 1:
+            return 0.75  # 单关键词匹配
 
-        return 0.3
+        # Level 3: 跨领域交叉匹配 (0.50-0.65)
+        # 检查专业是否属于其他领域，获取交叉分数
+        for other_category, other_info in self.MAJOR_JOB_MAPPING.items():
+            if other_category == job_category:
+                continue
+            for known_major in other_info["majors"]:
+                if known_major.lower() in major_lower or major_lower in known_major.lower():
+                    cross_key = (other_category, job_category)
+                    return self.CROSS_DOMAIN_BONUS.get(cross_key, 0.50)
+
+        # Level 4: 无匹配 - 根据是否有专业信息给不同分数
+        return 0.10
 
     def _map_job_type_to_category(self, job_type: str) -> str:
         """将岗位类型映射到专业类别"""
@@ -141,17 +180,19 @@ class MajorMatcher:
         """
         从简历中提取专业并计算匹配度
 
+        使用最高匹配策略：多个学历取最高匹配分
+
         Args:
             resume: 简历字典
             job_type: 岗位类型
 
         Returns:
-            专业匹配度分数 (0-1 之间)
+            专业匹配度分数 (0.10-0.95 之间)
         """
         education_experiences = resume.get("education_experiences", [])
 
         if not education_experiences:
-            return 0.5
+            return 0.30
 
         majors = []
         for edu in education_experiences:
@@ -160,7 +201,7 @@ class MajorMatcher:
                 majors.append(major)
 
         if not majors:
-            return 0.5
+            return 0.30
 
         similarities = [self.calculate_major_similarity(major, job_type) for major in majors]
         return max(similarities)

@@ -1,11 +1,13 @@
 """
 分维度评分主模块
 
-实现赛题要求的四个核心维度评分：
+实现赛题要求的六个核心维度评分：
 A. 教育背景评分 (Sedu)
 B. 工作经历评分 (Sexp) - 权重最高部分
 C. 技能与成果评分 (Sskill)
 D. 综合素质与修正项 (Sadj)
+E. 成长潜力评分 (Spotential) - 来自 Person_job_fit_model
+F. 岗位匹配评分 (Smatching) - 来自 Person_job_fit_model
 """
 
 import numpy as np
@@ -114,7 +116,7 @@ class DimensionalScorer:
         """
         B. 工作经历评分 (Sexp) - 权重最高部分
 
-        公式：Sexp = w1 * 公司实力 + w2 * 稳定性 + w3 * 升职速度
+        公式：Sexp = w1 * 公司实力 + w2 * 稳定性 + w3 * 升职速度 + w4 * 年龄因子
 
         Args:
             resume: 简历字典
@@ -126,16 +128,18 @@ class DimensionalScorer:
         company_power = self._calculate_company_power(resume)
         stability = self._calculate_stability(resume)
         promotion_speed = self.promotion_calculator.calculate_promotion_speed(resume)
+        age_factor = self._calculate_age_factor(resume)
 
-        w1, w2, w3 = 0.4, 0.3, 0.3
-        sexp_score = w1 * company_power + w2 * stability + w3 * promotion_speed
+        w1, w2, w3, w4 = 0.35, 0.25, 0.25, 0.15
+        sexp_score = w1 * company_power + w2 * stability + w3 * promotion_speed + w4 * age_factor
 
         details = {
             "company_power": company_power,
             "stability": stability,
             "promotion_speed": promotion_speed,
+            "age_factor": age_factor,
             "promotion_analysis": self.promotion_calculator.get_promotion_analysis(resume),
-            "weights": {"w1": w1, "w2": w2, "w3": w3}
+            "weights": {"w1": w1, "w2": w2, "w3": w3, "w4": w4}
         }
 
         return sexp_score, details
@@ -194,6 +198,48 @@ class DimensionalScorer:
 
         return max(1.0, min(stability_score, 5.0))
 
+    def _calculate_age_factor(self, resume: Dict) -> float:
+        """
+        计算年龄因子 - 钟形曲线评分
+
+        使用高斯分布：25-35岁为最佳区间（峰值），两端递减
+        - 25-35岁：4.5-5.0（最佳）
+        - 20-24岁：3.5-4.5（年轻但有潜力）
+        - 36-45岁：3.5-4.5（经验丰富）
+        - 46-55岁：2.5-3.5（开始下降）
+        - <20 或 >55：1.5-2.5
+
+        Args:
+            resume: 简历字典
+
+        Returns:
+            年龄因子得分 (1.0-5.0)
+        """
+        import math
+
+        age = resume.get("age", 0)
+
+        # 如果没有年龄信息，尝试从工作年限推算
+        if not age or age <= 0:
+            work_duration_months = resume.get("work_duration_months", 0)
+            if work_duration_months > 0:
+                # 假设22岁开始工作
+                age = 22 + work_duration_months / 12
+            else:
+                return 3.0  # 无信息时给中间分
+
+        # 高斯分布参数
+        mu = 30  # 峰值年龄
+        sigma = 8  # 标准差，控制曲线宽度
+
+        # 高斯函数: f(x) = exp(-0.5 * ((x - mu) / sigma)^2)
+        gaussian = math.exp(-0.5 * ((age - mu) / sigma) ** 2)
+
+        # 映射到 1.0-5.0 范围
+        score = 1.0 + 4.0 * gaussian
+
+        return max(1.0, min(score, 5.0))
+
     def calculate_skill_score(self, resume: Dict, job_type: str) -> Tuple[float, Dict]:
         """
         C. 技能与成果评分 (Sskill)
@@ -227,7 +273,7 @@ class DimensionalScorer:
         """
         D. 综合素质与修正项 (Sadj)
 
-        公式：Sadj = 软技能分 - 跳槽惩罚
+        公式：Sadj = (0.6 * 软技能分 + 0.4 * EQ分) * EQ乘数 * 跳槽惩罚
 
         Args:
             resume: 简历字典
@@ -237,13 +283,25 @@ class DimensionalScorer:
             (综合素质总分，详情字典)
         """
         soft_skill_score = self.achievement_scorer.calculate_soft_skill_score(resume)
+        eq_score = self.achievement_scorer.calculate_eq_score(resume)
 
         job_hopping_penalty = self._calculate_job_hopping_penalty(resume)
 
-        sadj_score = soft_skill_score * job_hopping_penalty
+        # EQ乘数: EQ 4.0以上给1.1加成，3.0以下给0.9惩罚
+        if eq_score >= 4.0:
+            eq_multiplier = 1.10
+        elif eq_score >= 3.0:
+            eq_multiplier = 1.0
+        else:
+            eq_multiplier = 0.90
+
+        base_score = 0.6 * soft_skill_score + 0.4 * eq_score
+        sadj_score = base_score * eq_multiplier * job_hopping_penalty
 
         details = {
             "soft_skill_score": soft_skill_score,
+            "eq_score": eq_score,
+            "eq_multiplier": eq_multiplier,
             "soft_skill_analysis": self.achievement_scorer.get_soft_skill_analysis(resume),
             "job_hopping_penalty": job_hopping_penalty,
             "penalty_triggered": job_hopping_penalty < 1.0
@@ -256,40 +314,40 @@ class DimensionalScorer:
         计算跳槽频率惩罚
 
         若 5 年内跳槽 > 3 次，触发惩罚函数，总分 × 0.9
-        跳槽次数根据 work_experiences 的数量判断
+        跳槽次数 = 工作段数 - 1（与 risk_identifier 逻辑一致）
         """
         work_experiences = resume.get("work_experiences", [])
         work_duration_months = resume.get("work_duration_months", 0)
 
-        if not work_experiences:
-            n_jobs = len(work_experiences)
-        else:
-            n_jobs = len(work_experiences)
+        n_jobs = len(work_experiences) if work_experiences else 0
+        job_changes = max(0, n_jobs - 1)
+
+        if job_changes <= 3:
+            return 1.0
 
         work_years = work_duration_months / 12.0 if work_duration_months > 0 else n_jobs * 2
-
-        if work_years < 5:
-            recent_years = work_years
-        else:
-            recent_years = 5
-
+        recent_years = min(work_years, 5)
         if recent_years < 1:
             recent_years = 1
 
-        job_hopping_rate = n_jobs / recent_years
+        jobs_per_5years = job_changes / recent_years * 5
 
-        if job_hopping_rate > 0.6:
+        if jobs_per_5years > 3:
             return 0.9
 
         return 1.0
 
-    def calculate_all_dimensions(self, resume: Dict, job_type: str) -> Dict:
+    def calculate_all_dimensions(self, resume: Dict, job_type: str,
+                                  potential_score: float = None,
+                                  matching_score: float = None) -> Dict:
         """
-        计算所有四个维度的得分
+        计算所有六个维度的得分
 
         Args:
             resume: 简历字典
             job_type: 岗位类型
+            potential_score: 成长潜力得分（0-10，来自Person_job_fit_model），None则默认3.0
+            matching_score: 岗位匹配得分（0-5，来自Person_job_fit_model），None则默认3.0
 
         Returns:
             所有维度得分和详情
@@ -299,17 +357,37 @@ class DimensionalScorer:
         sskill_score, sskill_details = self.calculate_skill_score(resume, job_type)
         sadj_score, sadj_details = self.calculate_comprehensive_score(resume, job_type)
 
+        # 成长潜力：来自 Person_job_fit_model 的 0-10 分归一化到 0-5
+        if potential_score is not None:
+            growth_potential = min(max(potential_score / 2.0, 0), 5.0)
+        else:
+            import logging
+            logging.getLogger(__name__).warning("Person_job_fit_model 未提供 potential_score，成长潜力使用默认值 3.0")
+            growth_potential = 3.0
+
+        # 岗位匹配：来自 Person_job_fit_model 的 0-5 分直接使用
+        if matching_score is not None:
+            job_matching = min(max(matching_score, 0), 5.0)
+        else:
+            import logging
+            logging.getLogger(__name__).warning("Person_job_fit_model 未提供 matching_score，岗位匹配使用默认值 3.0")
+            job_matching = 3.0
+
         return {
             "dimensional_scores": {
                 "education": sedu_score,
                 "experience": sexp_score,
                 "skill_achievement": sskill_score,
-                "comprehensive": sadj_score
+                "comprehensive": sadj_score,
+                "growth_potential": growth_potential,
+                "job_matching": job_matching
             },
             "details": {
                 "education_details": sedu_details,
                 "experience_details": sexp_details,
                 "skill_details": sskill_details,
-                "comprehensive_details": sadj_details
+                "comprehensive_details": sadj_details,
+                "growth_potential_details": {"source": "person_job_fit_model", "raw_score": potential_score},
+                "job_matching_details": {"source": "person_job_fit_model", "raw_score": matching_score}
             }
         }

@@ -1,56 +1,50 @@
 <template>
   <div class="candidate-detail-container">
     <el-page-header @back="$router.back()" content="候选人详情" />
-    
+
     <div v-if="candidate" class="candidate-content">
-      <!-- 头部信息 -->
-      <el-card class="header-card">
+      <!-- Header -->
+      <div class="card header-card">
         <div class="candidate-header">
-          <el-avatar :size="80" :icon="UserFilled" style="background: #2E86AB; font-size: 40px" />
+          <el-avatar :size="64" :icon="UserFilled" style="background: var(--color-primary); font-size: 32px" />
           <div class="candidate-basic">
-            <h2>{{ candidate.candidate_id }}</h2>
-            <el-tag v-if="candidate.penalty_applied" type="danger" effect="dark">
-              ⚠️ 跳槽惩罚
-            </el-tag>
-            <el-tag v-else type="success" effect="dark">
-              ✅ 稳定性良好
-            </el-tag>
+            <h2 class="candidate-name">{{ candidate.candidate_id }}</h2>
+            <el-tag v-if="candidate.penalty_applied" type="danger" effect="dark" size="small">跳槽惩罚</el-tag>
+            <el-tag v-else type="success" effect="dark" size="small">稳定性良好</el-tag>
           </div>
           <div class="candidate-score">
             <div class="score-circle">
               <span class="score-value">{{ formatScore(candidate.tci_score) }}</span>
-              <span class="score-label">TCI得分</span>
+              <span class="score-label">TCI</span>
             </div>
             <div class="rank-info">
-              <span class="rank-label">行业排名</span>
-              <span class="rank-value">第 {{ rank }} 名</span>
+              <span class="rank-label">排名</span>
+              <span class="rank-value">#{{ rank }}</span>
             </div>
-            <div class="export-actions" style="margin-top: 10px;">
-              <el-button type="danger" size="small" @click="handleExportPDF">
-                <el-icon><Download /></el-icon>导出PDF
-              </el-button>
-            </div>
+            <el-button type="danger" size="small" @click="handleExportPDF">
+              <el-icon><Download /></el-icon>PDF
+            </el-button>
           </div>
         </div>
-      </el-card>
+      </div>
 
       <el-row :gutter="20" class="mt-20">
         <!-- 雷达图 -->
         <el-col :span="8">
-          <el-card class="chart-card">
-            <template #header>
-              <span>🎯 维度得分雷达图</span>
-            </template>
+          <div class="card chart-card">
+            <div class="card-header">
+              <span class="card-title">维度得分雷达图</span>
+            </div>
             <v-chart :option="radarOption" autoresize style="height: 350px" />
-          </el-card>
+          </div>
         </el-col>
 
         <!-- 维度详情 -->
         <el-col :span="8">
-          <el-card class="detail-card">
-            <template #header>
-              <span>📊 各维度得分详情</span>
-            </template>
+          <div class="card detail-card">
+            <div class="card-header">
+              <span class="card-title">各维度得分详情</span>
+            </div>
             <div class="dimension-list">
               <div class="dimension-item" v-for="(score, key) in candidate.dimensional_scores" :key="key">
                 <div class="dim-info">
@@ -68,30 +62,28 @@
                 </div>
               </div>
             </div>
-          </el-card>
+          </div>
         </el-col>
 
         <!-- 权重分布 -->
         <el-col :span="8">
-          <el-card class="chart-card">
-            <template #header>
-              <span>⚖️ 维度权重分布</span>
-            </template>
+          <div class="card chart-card">
+            <div class="card-header">
+              <span class="card-title">维度权重分布</span>
+            </div>
             <v-chart :option="pieOption" autoresize style="height: 350px" />
-          </el-card>
+          </div>
         </el-col>
       </el-row>
 
       <!-- AI智能分析 -->
-      <el-card class="analysis-card mt-20">
-        <template #header>
-          <div class="analysis-header">
-            <span>🤖 AI 智能分析</span>
+      <div class="card analysis-card mt-20">
+        <div class="card-header analysis-header">
+          <span class="card-title">AI 智能分析</span>
             <el-tag v-if="analysisData" :type="analysisData.source === 'llm' ? 'success' : 'info'" size="small">
               {{ analysisData.source === 'llm' ? 'AI Powered' : '规则分析' }}
             </el-tag>
           </div>
-        </template>
 
         <div v-if="analysisLoading" class="analysis-loading">
           <el-skeleton :rows="6" animated />
@@ -164,18 +156,16 @@
         <div v-else class="analysis-empty">
           <el-empty description="暂无分析数据" />
         </div>
-      </el-card>
+      </div>
 
       <!-- 风险评估卡片 -->
-      <el-card class="risk-card mt-20">
-        <template #header>
-          <div class="risk-header">
-            <span>⚠️ 风险评估</span>
+      <div class="card risk-card mt-20">
+        <div class="card-header risk-header">
+          <span class="card-title">风险评估</span>
             <el-tag v-if="riskData" :type="getRiskLevelType(riskData.overall_risk_level)" effect="dark" size="small">
               {{ riskData.overall_risk_level === '高' ? '高风险' : riskData.overall_risk_level === '中' ? '中风险' : '低风险' }}
             </el-tag>
           </div>
-        </template>
 
         <div v-if="riskLoading" class="analysis-loading">
           <el-skeleton :rows="4" animated />
@@ -217,18 +207,16 @@
         <div v-else class="analysis-empty">
           <el-empty description="暂无风险评估数据" />
         </div>
-      </el-card>
+      </div>
 
       <!-- 潜力评估卡片 -->
-      <el-card class="potential-card mt-20">
-        <template #header>
-          <div class="potential-header">
-            <span>🚀 潜力评估</span>
+      <div class="card potential-card mt-20">
+        <div class="card-header potential-header">
+          <span class="card-title">潜力评估</span>
             <el-tag v-if="potentialData" type="success" effect="dark" size="small">
               {{ potentialData.talent_type }}
             </el-tag>
           </div>
-        </template>
 
         <div v-if="potentialLoading" class="analysis-loading">
           <el-skeleton :rows="4" animated />
@@ -274,7 +262,7 @@
         <div v-else class="analysis-empty">
           <el-empty description="暂无潜力评估数据" />
         </div>
-      </el-card>
+      </div>
     </div>
 
     <div v-else class="loading-container">
@@ -307,7 +295,9 @@ const dimensionNames = {
   education: '教育背景',
   experience: '工作经历',
   skill_achievement: '技能成果',
-  comprehensive: '综合素质'
+  comprehensive: '综合素质',
+  growth_potential: '成长潜力',
+  job_matching: '岗位匹配'
 }
 
 const potentialDimNames = {
@@ -328,89 +318,113 @@ const getRiskLevelType = (level) => {
   return 'success'
 }
 
-const potentialRadarOption = computed(() => ({
-  tooltip: {},
-  radar: {
-    indicator: [
-      { name: '职业发展连续性', max: 10 },
-      { name: '职责提升轨迹', max: 10 },
-      { name: '项目复杂度', max: 10 },
-      { name: '学习能力', max: 10 },
-      { name: '公司平台跃迁', max: 10 }
-    ]
-  },
-  series: [{
-    type: 'radar',
-    data: [{
-      value: [
-        potentialData.value?.dimension_scores?.career_continuity || 0,
-        potentialData.value?.dimension_scores?.responsibility_growth || 0,
-        potentialData.value?.dimension_scores?.project_complexity || 0,
-        potentialData.value?.dimension_scores?.learning_ability || 0,
-        potentialData.value?.dimension_scores?.company_platform_growth || 0
+const potentialRadarOption = computed(() => {
+  const isDark = document.documentElement.classList.contains('dark')
+  return {
+    tooltip: {},
+    radar: {
+      indicator: [
+        { name: '职业发展连续性', max: 10 },
+        { name: '职责提升轨迹', max: 10 },
+        { name: '项目复杂度', max: 10 },
+        { name: '学习能力', max: 10 },
+        { name: '公司平台跃迁', max: 10 }
       ],
-      name: '潜力得分',
-      areaStyle: { opacity: 0.3 },
-      lineStyle: { width: 2 }
+      axisName: { color: isDark ? '#94A3B8' : '#64748B' },
+      splitLine: { lineStyle: { color: isDark ? '#334155' : '#E2E8F0' } },
+      splitArea: { areaStyle: { color: ['transparent'] } }
+    },
+    series: [{
+      type: 'radar',
+      data: [{
+        value: [
+          potentialData.value?.dimension_scores?.career_continuity || 0,
+          potentialData.value?.dimension_scores?.responsibility_growth || 0,
+          potentialData.value?.dimension_scores?.project_complexity || 0,
+          potentialData.value?.dimension_scores?.learning_ability || 0,
+          potentialData.value?.dimension_scores?.company_platform_growth || 0
+        ],
+        name: '潜力得分',
+        areaStyle: { opacity: 0.3 },
+        lineStyle: { width: 2 }
+      }]
     }]
-  }]
-}))
+  }
+})
 
 const dimensionColors = {
   education: '#667eea',
   experience: '#f5576c',
   skill_achievement: '#4facfe',
-  comprehensive: '#43e97b'
+  comprehensive: '#43e97b',
+  growth_potential: '#fa709a',
+  job_matching: '#fee140'
 }
 
-const radarOption = computed(() => ({
-  tooltip: {},
-  radar: {
-    indicator: [
-      { name: '教育背景', max: 5 },
-      { name: '工作经历', max: 5 },
-      { name: '技能成果', max: 5 },
-      { name: '综合素质', max: 5 }
-    ]
-  },
-  series: [{
-    type: 'radar',
-    data: [{
-      value: [
-        candidate.value?.dimensional_scores?.education || 0,
-        candidate.value?.dimensional_scores?.experience || 0,
-        candidate.value?.dimensional_scores?.skill_achievement || 0,
-        candidate.value?.dimensional_scores?.comprehensive || 0
+const radarOption = computed(() => {
+  const isDark = document.documentElement.classList.contains('dark')
+  return {
+    tooltip: {},
+    radar: {
+      indicator: [
+        { name: '教育背景', max: 5 },
+        { name: '工作经历', max: 5 },
+        { name: '技能成果', max: 5 },
+        { name: '综合素质', max: 5 },
+        { name: '成长潜力', max: 5 },
+        { name: '岗位匹配', max: 5 }
       ],
-      name: '得分',
-      areaStyle: { opacity: 0.3 },
-      lineStyle: { width: 2 }
+      axisName: { color: isDark ? '#94A3B8' : '#64748B' },
+      splitLine: { lineStyle: { color: isDark ? '#334155' : '#E2E8F0' } },
+      splitArea: { areaStyle: { color: ['transparent'] } }
+    },
+    series: [{
+      type: 'radar',
+      data: [{
+        value: [
+          candidate.value?.dimensional_scores?.education || 0,
+          candidate.value?.dimensional_scores?.experience || 0,
+          candidate.value?.dimensional_scores?.skill_achievement || 0,
+          candidate.value?.dimensional_scores?.comprehensive || 0,
+          candidate.value?.dimensional_scores?.growth_potential || 0,
+          candidate.value?.dimensional_scores?.job_matching || 0
+        ],
+        name: '得分',
+        areaStyle: { opacity: 0.3 },
+        lineStyle: { width: 2 }
+      }]
     }]
-  }]
-}))
+  }
+})
 
-const pieOption = computed(() => ({
-  tooltip: { trigger: 'item' },
-  legend: { bottom: '5%' },
-  series: [{
-    type: 'pie',
-    radius: ['40%', '70%'],
-    avoidLabelOverlap: false,
-    itemStyle: { borderRadius: 10, borderColor: '#fff', borderWidth: 2 },
-    label: { show: true, formatter: (params) => `${params.name}: ${params.value.toFixed(1)}%` },
-    data: candidate.value ? [
-      { value: candidate.value.dimension_weights.education * 100, name: '教育背景', itemStyle: { color: '#667eea' } },
-      { value: candidate.value.dimension_weights.experience * 100, name: '工作经历', itemStyle: { color: '#f5576c' } },
-      { value: candidate.value.dimension_weights.skill_achievement * 100, name: '技能成果', itemStyle: { color: '#4facfe' } },
-      { value: candidate.value.dimension_weights.comprehensive * 100, name: '综合素质', itemStyle: { color: '#43e97b' } }
-    ] : []
-  }]
-}))
+const pieOption = computed(() => {
+  const isDark = document.documentElement.classList.contains('dark')
+  return {
+    tooltip: { trigger: 'item' },
+    legend: { bottom: '2%', textStyle: { color: isDark ? '#CBD5E1' : '#475569' } },
+    series: [{
+      type: 'pie',
+      radius: ['40%', '65%'],
+      center: ['50%', '42%'],
+      avoidLabelOverlap: false,
+      itemStyle: { borderRadius: 8, borderColor: isDark ? '#1E293B' : '#fff', borderWidth: 2 },
+      label: { show: true, formatter: (params) => `${params.name}: ${params.value.toFixed(1)}%`, color: isDark ? '#CBD5E1' : '#475569' },
+      data: candidate.value ? [
+        { value: (candidate.value.dimension_weights.education || 0) * 100, name: '教育背景', itemStyle: { color: '#6366F1' } },
+        { value: (candidate.value.dimension_weights.experience || 0) * 100, name: '工作经历', itemStyle: { color: '#EC4899' } },
+        { value: (candidate.value.dimension_weights.skill_achievement || 0) * 100, name: '技能成果', itemStyle: { color: '#0EA5E9' } },
+        { value: (candidate.value.dimension_weights.comprehensive || 0) * 100, name: '综合素质', itemStyle: { color: '#10B981' } },
+        { value: (candidate.value.dimension_weights.growth_potential || 0) * 100, name: '成长潜力', itemStyle: { color: '#F59E0B' } },
+        { value: (candidate.value.dimension_weights.job_matching || 0) * 100, name: '岗位匹配', itemStyle: { color: '#8B5CF6' } }
+      ] : []
+    }]
+  }
+})
 
 const getScoreColor = (score) => {
-  if (score >= 4) return '#67C23A'
-  if (score >= 3) return '#E6A23C'
-  return '#F56C6C'
+  if (score >= 4) return '#16A34A'
+  if (score >= 3) return '#D97706'
+  return '#DC2626'
 }
 
 const handleExportPDF = async () => {
@@ -514,39 +528,54 @@ onMounted(async () => {
 
 <style scoped>
 .candidate-detail-container {
-  max-width: 1400px;
+  max-width: 1200px;
   margin: 0 auto;
 }
 
+.chart-card, .detail-card, .analysis-card, .risk-card, .potential-card {
+  padding: var(--space-lg);
+}
+
+.card-header {
+  margin-bottom: var(--space-md);
+}
+
+.card-title {
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
 .header-card {
-  margin-top: 20px;
-  border-radius: 12px;
+  margin-top: var(--space-md);
+  padding: var(--space-lg);
 }
 
 .candidate-header {
   display: flex;
   align-items: center;
-  gap: 30px;
+  gap: var(--space-lg);
 }
 
-.candidate-basic h2 {
-  margin: 0 0 10px;
-  font-size: 28px;
-  color: #2c3e50;
+.candidate-name {
+  margin: 0 0 var(--space-sm);
+  font-size: var(--font-size-2xl);
+  font-weight: 700;
+  color: var(--color-text-primary);
 }
 
 .candidate-score {
   margin-left: auto;
   display: flex;
   align-items: center;
-  gap: 30px;
+  gap: var(--space-lg);
 }
 
 .score-circle {
-  width: 120px;
-  height: 120px;
+  width: 100px;
+  height: 100px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #2E86AB 0%, #4ECDC4 100%);
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-accent) 100%);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -555,12 +584,13 @@ onMounted(async () => {
 }
 
 .score-value {
-  font-size: 36px;
-  font-weight: bold;
+  font-size: 28px;
+  font-weight: 700;
 }
 
 .score-label {
-  font-size: 14px;
+  font-size: var(--font-size-xs);
+  opacity: 0.85;
 }
 
 .rank-info {
@@ -569,19 +599,15 @@ onMounted(async () => {
 
 .rank-label {
   display: block;
-  font-size: 14px;
-  color: #666;
-  margin-bottom: 5px;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  margin-bottom: 2px;
 }
 
 .rank-value {
-  font-size: 32px;
-  font-weight: bold;
-  color: #E6A23C;
-}
-
-.chart-card, .detail-card, .analysis-card {
-  border-radius: 12px;
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--color-warning);
 }
 
 .dimension-list {
@@ -590,7 +616,7 @@ onMounted(async () => {
 
 .dimension-item {
   padding: 15px 0;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid var(--color-border-light);
 }
 
 .dimension-item:last-child {
@@ -605,12 +631,12 @@ onMounted(async () => {
 
 .dim-name {
   font-weight: 600;
-  color: #2c3e50;
+  color: var(--color-text-primary);
 }
 
 .dim-weight {
-  font-size: 13px;
-  color: #999;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
 }
 
 .dim-score {
@@ -620,9 +646,9 @@ onMounted(async () => {
 }
 
 .score-text {
-  font-weight: bold;
-  font-size: 18px;
-  color: #2E86AB;
+  font-weight: 700;
+  font-size: var(--font-size-lg);
+  color: var(--color-primary);
   min-width: 50px;
 }
 
@@ -644,36 +670,36 @@ onMounted(async () => {
 }
 
 .analysis-summary {
-  background: linear-gradient(135deg, #f5f7fa 0%, #e4e8ee 100%);
-  padding: 20px;
-  border-radius: 10px;
-  border-left: 4px solid #2E86AB;
+  background: var(--color-primary-bg);
+  padding: var(--space-lg);
+  border-radius: var(--radius-md);
+  border-left: 4px solid var(--color-primary);
 }
 
 .analysis-summary h4 {
-  color: #2E86AB;
-  margin-bottom: 10px;
-  font-size: 15px;
+  color: var(--color-primary);
+  margin-bottom: var(--space-sm);
+  font-size: var(--font-size-base);
 }
 
 .analysis-summary p {
-  color: #2c3e50;
+  color: var(--color-text-primary);
   line-height: 1.8;
-  font-size: 14px;
+  font-size: var(--font-size-base);
   margin: 0;
 }
 
 .analysis-section {
-  background: #fafafa;
-  padding: 16px;
-  border-radius: 10px;
+  background: var(--color-bg-hover);
+  padding: var(--space-md);
+  border-radius: var(--radius-md);
   height: 100%;
 }
 
 .analysis-section h4 {
-  color: #2E86AB;
-  margin-bottom: 12px;
-  font-size: 15px;
+  color: var(--color-primary);
+  margin-bottom: var(--space-sm);
+  font-size: var(--font-size-base);
 }
 
 .tag-list {
@@ -691,48 +717,48 @@ onMounted(async () => {
 }
 
 .empty-text {
-  color: #c0c4cc;
-  font-size: 13px;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
 }
 
 .recommendation-box {
-  background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
-  padding: 20px;
-  border-radius: 10px;
-  border-left: 4px solid #67C23A;
+  background: var(--color-success-bg);
+  padding: var(--space-lg);
+  border-radius: var(--radius-md);
+  border-left: 4px solid var(--color-success);
 }
 
 .recommendation-box h4 {
-  color: #67C23A;
-  margin-bottom: 10px;
-  font-size: 15px;
+  color: var(--color-success);
+  margin-bottom: var(--space-sm);
+  font-size: var(--font-size-base);
 }
 
 .recommendation-box p {
-  color: #2c3e50;
+  color: var(--color-text-primary);
   line-height: 1.8;
-  font-size: 14px;
+  font-size: var(--font-size-base);
   margin: 0;
 }
 
 .development-box {
-  background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
-  padding: 20px;
-  border-radius: 10px;
-  border-left: 4px solid #E6A23C;
+  background: var(--color-warning-bg);
+  padding: var(--space-lg);
+  border-radius: var(--radius-md);
+  border-left: 4px solid var(--color-warning);
 }
 
 .development-box h4 {
-  color: #E6A23C;
-  margin-bottom: 10px;
-  font-size: 15px;
+  color: var(--color-warning);
+  margin-bottom: var(--space-sm);
+  font-size: var(--font-size-base);
 }
 
 .development-box ul {
   padding-left: 20px;
-  color: #2c3e50;
+  color: var(--color-text-primary);
   line-height: 1.8;
-  font-size: 14px;
+  font-size: var(--font-size-base);
   margin: 0;
 }
 
@@ -789,15 +815,15 @@ onMounted(async () => {
 }
 
 .risk-score-circle.risk-高 {
-  background: linear-gradient(135deg, #f56c6c 0%, #ef5350 100%);
+  background: linear-gradient(135deg, var(--color-danger), #B91C1C);
 }
 
 .risk-score-circle.risk-中 {
-  background: linear-gradient(135deg, #e6a23c 0%, #f5a623 100%);
+  background: linear-gradient(135deg, var(--color-warning), #B45309);
 }
 
 .risk-score-circle.risk-低 {
-  background: linear-gradient(135deg, #67c23a 0%, #53d17a 100%);
+  background: linear-gradient(135deg, var(--color-success), #15803D);
 }
 
 .risk-score-value {
@@ -811,34 +837,34 @@ onMounted(async () => {
 
 .risk-comment h4, .potential-comment h4 {
   margin: 0 0 5px;
-  color: #2c3e50;
-  font-size: 18px;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-lg);
 }
 
 .risk-comment p, .potential-comment p {
   margin: 0;
-  color: #666;
-  font-size: 14px;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-base);
 }
 
 .risk-factor-item {
-  background: #fafafa;
-  padding: 16px;
-  border-radius: 10px;
-  margin-bottom: 12px;
+  background: var(--color-bg-hover);
+  padding: var(--space-md);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-sm);
   border-left: 4px solid;
 }
 
 .risk-factor-item.risk-level-高 {
-  border-left-color: #f56c6c;
+  border-left-color: var(--color-danger);
 }
 
 .risk-factor-item.risk-level-中 {
-  border-left-color: #e6a23c;
+  border-left-color: var(--color-warning);
 }
 
 .risk-factor-item.risk-level-低 {
-  border-left-color: #67c23a;
+  border-left-color: var(--color-success);
 }
 
 .risk-factor-header {
@@ -850,14 +876,14 @@ onMounted(async () => {
 
 .risk-type {
   font-weight: 600;
-  color: #2c3e50;
-  font-size: 15px;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-base);
 }
 
 .risk-factor-desc {
   margin: 0;
-  color: #666;
-  font-size: 13px;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
   line-height: 1.6;
 }
 
@@ -870,8 +896,8 @@ onMounted(async () => {
 
 .no-risk p {
   margin: 10px 0 0;
-  color: #67c23a;
-  font-size: 16px;
+  color: var(--color-success);
+  font-size: var(--font-size-lg);
 }
 
 /* 潜力评估样式 */
@@ -879,7 +905,7 @@ onMounted(async () => {
   width: 120px;
   height: 120px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #409eff 0%, #53a8ff 100%);
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-light));
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -902,7 +928,7 @@ onMounted(async () => {
 
 .potential-dim-item {
   padding: 12px 0;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid var(--color-border-light);
 }
 
 .potential-dim-item:last-child {
@@ -918,13 +944,13 @@ onMounted(async () => {
 
 .dim-header .dim-name {
   font-weight: 600;
-  color: #2c3e50;
-  font-size: 14px;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-base);
 }
 
 .dim-header .dim-score {
-  font-weight: bold;
-  color: #409eff;
-  font-size: 16px;
+  font-weight: 700;
+  color: var(--color-primary);
+  font-size: var(--font-size-lg);
 }
 </style>

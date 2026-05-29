@@ -2,9 +2,9 @@
 分维度评分主模型
 
 整合所有模块，提供统一的高层 API：
-- 维度评分计算
+- 六维评分计算（教育背景、工作经历、技能与成果、综合素质、成长潜力、岗位匹配）
 - 权重映射与聚合
-- TCI 综合得分计算
+- D-TCI 动态人才竞争力指数计算（含加分/惩罚项）
 - 结果导出
 """
 
@@ -100,10 +100,23 @@ class DimensionalScoringModel:
     分维度评分模型主类
 
     整合以下模块：
-    - 维度评分计算（教育背景、工作经历、技能与成果、综合素质）
+    - 六维评分计算（教育背景、工作经历、技能与成果、综合素质、成长潜力、岗位匹配）
     - 维度映射与权重聚合（从 weight_model 映射）
-    - TCI 综合得分计算
+    - D-TCI 动态人才竞争力指数计算（含成长加分、风险惩罚、岗位匹配修正）
+    - Person_job_fit_model 集成（成长潜力、风险评估、岗位匹配）
     """
+
+    # 行业默认岗位画像（用于岗位匹配评分）
+    DEFAULT_JOB_PROFILES = {
+        "电商": {"title": "电商运营", "education": "本科", "work_years": 3, "skills": ["电商运营", "数据分析", "推广", "供应链"], "industry": "电商"},
+        "品牌": {"title": "品牌经理", "education": "本科", "work_years": 3, "skills": ["品牌策划", "市场营销", "传播", "创意"], "industry": "品牌"},
+        "销售": {"title": "销售经理", "education": "本科", "work_years": 3, "skills": ["销售", "客户关系", "谈判", "渠道"], "industry": "销售"},
+        "研发": {"title": "研发工程师", "education": "本科", "work_years": 3, "skills": ["编程", "架构设计", "技术方案", "项目管理"], "industry": "研发"},
+        "生产": {"title": "生产主管", "education": "本科", "work_years": 5, "skills": ["生产管理", "质量管理", "精益生产", "成本控制"], "industry": "生产"},
+        "人力资源": {"title": "HR经理", "education": "本科", "work_years": 3, "skills": ["招聘", "培训", "薪酬绩效", "员工关系"], "industry": "人力资源"},
+        "technical": {"title": "技术工程师", "education": "本科", "work_years": 3, "skills": ["专业技能", "项目管理"], "industry": "技术"},
+        "management": {"title": "管理岗", "education": "本科", "work_years": 5, "skills": ["团队管理", "组织协调", "战略规划"], "industry": "管理"},
+    }
 
     def __init__(
         self,
@@ -121,6 +134,22 @@ class DimensionalScoringModel:
 
         self.scorer = DimensionalScorer()
         self.mapper = DimensionMapper()
+
+        # 尝试集成 Person_job_fit_model
+        self.person_job_fit_model = None
+        try:
+            import sys
+            from pathlib import Path
+            backend_dir = str(Path(__file__).parent.parent)
+            if backend_dir not in sys.path:
+                sys.path.insert(0, backend_dir)
+            from Person_job_fit_model import PersonJobFitModel
+            self.person_job_fit_model = PersonJobFitModel(verbose=False)
+            if self.verbose:
+                print("[OK] Person_job_fit_model 已集成（成长潜力+风险评估+岗位匹配）")
+        except Exception as e:
+            if self.verbose:
+                print(f"[INFO] Person_job_fit_model 未集成，使用4维评分模式: {e}")
 
         self.results = {}
 
@@ -202,16 +231,64 @@ class DimensionalScoringModel:
                 self._print_weights(dimension_weights)
 
         all_results = []
+        default_job_profile = self.DEFAULT_JOB_PROFILES.get(job_type, self.DEFAULT_JOB_PROFILES["technical"])
 
         for i, resume in enumerate(resumes, 1):
             if self.verbose:
                 print(f"\n【{i}/{len(resumes)}】计算第 {i} 份简历...")
 
-            dimensional_scores = self.scorer.calculate_all_dimensions(resume, job_type)
+            # Person_job_fit_model 评估
+            potential_score = None
+            risk_score = None
+            matching_score = None
+            growth_bonus = 0.0
+            risk_penalty = 0.0
+            matching_correction = 0.0
+
+            if self.person_job_fit_model:
+                try:
+                    # 成长潜力评估
+                    potential_result = self.person_job_fit_model.single_potential_evaluation(resume)
+                    if potential_result and "potential_score" in potential_result:
+                        potential_score = potential_result["potential_score"]
+
+                    # 风险评估
+                    risk_result = self.person_job_fit_model.single_risk_assessment(resume)
+                    if risk_result and "overall_risk_score" in risk_result:
+                        risk_score = risk_result["overall_risk_score"]
+
+                    # 岗位匹配评估
+                    matching_result = self.person_job_fit_model.single_matching(resume, default_job_profile)
+                    if matching_result and "overall_score" in matching_result:
+                        matching_score = matching_result["overall_score"]
+                except Exception as e:
+                    if self.verbose:
+                        print(f"  [WARN] Person_job_fit_model 评估异常: {e}")
+
+            # 六维评分
+            dimensional_scores = self.scorer.calculate_all_dimensions(
+                resume, job_type,
+                potential_score=potential_score,
+                matching_score=matching_score
+            )
 
             normalized_scores = self.mapper.map_scores(dimensional_scores["dimensional_scores"], job_type)
 
-            tci_score = self.mapper.calculate_tci(normalized_scores, dimension_weights)
+            # 计算加分/惩罚项
+            if potential_score is not None:
+                growth_bonus = 0.1 * (min(max(potential_score, 0), 10) / 2.0 - 3.0) / 2.0
+            if risk_score is not None:
+                risk_penalty = -0.15 * (min(max(risk_score, 0), 10) / 10.0)
+            if matching_score is not None:
+                matching_correction = 0.1 * (min(max(matching_score, 0), 5) - 3.0) / 2.0
+
+            # D-TCI 计算
+            tci_score = self.mapper.calculate_tci(
+                normalized_scores, dimension_weights,
+                growth_bonus=growth_bonus,
+                risk_penalty=risk_penalty,
+                matching_correction=matching_correction
+            )
 
             penalty_applied = dimensional_scores["details"]["comprehensive_details"].get("penalty_triggered", False)
 
@@ -234,7 +311,14 @@ class DimensionalScoringModel:
                 "tci_score": tci_score,
                 "penalty_applied": penalty_applied,
                 "dimension_weights": dimension_weights,
-                "details": dimensional_scores["details"]
+                "details": dimensional_scores["details"],
+                "d_tci_breakdown": {
+                    "base_weighted_sum": tci_score - growth_bonus - risk_penalty - matching_correction,
+                    "growth_bonus": round(growth_bonus, 4),
+                    "risk_penalty": round(risk_penalty, 4),
+                    "matching_correction": round(matching_correction, 4),
+                    "final_d_tci": tci_score
+                }
             }
 
             all_results.append(result)
@@ -302,7 +386,7 @@ class DimensionalScoringModel:
 
         Args:
             output_path: 输出文件路径
-            format: 输出格式 ("json" 或 "csv")
+            format: 输出格式 ("json"、"csv" 或 "excel")
         """
         if not self.results:
             raise ValueError("请先调用 calculate() 方法计算得分")
@@ -324,8 +408,18 @@ class DimensionalScoringModel:
             except ImportError:
                 raise ImportError("需要安装 pandas: pip install pandas")
 
+        elif format == "excel":
+            try:
+                import pandas as pd
+                df = self._prepare_csv_export()
+                df.to_excel(output_path, index=False, engine='openpyxl')
+                if self.verbose:
+                    print(f"[OK] 结果已导出到：{output_path}")
+            except ImportError:
+                raise ImportError("需要安装 pandas 和 openpyxl: pip install pandas openpyxl")
+
         else:
-            raise ValueError(f"Unsupported format: {format}")
+            raise ValueError(f"Unsupported format: {format}. 支持: json, csv, excel")
 
     def _prepare_json_export(self) -> Dict:
         """准备 JSON 导出数据"""
@@ -356,19 +450,25 @@ class DimensionalScoringModel:
 
         rows = []
         for candidate in self.results["candidates"]:
+            scores = candidate["dimensional_scores"]
+            weights = candidate["dimension_weights"]
             row = {
                 "candidate_id": candidate["candidate_id"],
                 "job_type": candidate["job_type"],
-                "education_score": candidate["dimensional_scores"]["education"],
-                "experience_score": candidate["dimensional_scores"]["experience"],
-                "skill_achievement_score": candidate["dimensional_scores"]["skill_achievement"],
-                "comprehensive_score": candidate["dimensional_scores"]["comprehensive"],
+                "education_score": scores.get("education", 0),
+                "experience_score": scores.get("experience", 0),
+                "skill_achievement_score": scores.get("skill_achievement", 0),
+                "comprehensive_score": scores.get("comprehensive", 0),
+                "growth_potential_score": scores.get("growth_potential", 0),
+                "job_matching_score": scores.get("job_matching", 0),
                 "tci_score": candidate["tci_score"],
                 "penalty_applied": candidate["penalty_applied"],
-                "wedu_weight": candidate["dimension_weights"]["education"],
-                "wexp_weight": candidate["dimension_weights"]["experience"],
-                "wskill_weight": candidate["dimension_weights"]["skill_achievement"],
-                "wadj_weight": candidate["dimension_weights"]["comprehensive"]
+                "wedu_weight": weights.get("education", 0),
+                "wexp_weight": weights.get("experience", 0),
+                "wskill_weight": weights.get("skill_achievement", 0),
+                "wadj_weight": weights.get("comprehensive", 0),
+                "wpot_weight": weights.get("growth_potential", 0),
+                "wmatch_weight": weights.get("job_matching", 0)
             }
             rows.append(row)
 
@@ -400,7 +500,9 @@ class DimensionalScoringModel:
                     "education": 0,
                     "experience": 0,
                     "skill_achievement": 0,
-                    "comprehensive": 0
+                    "comprehensive": 0,
+                    "growth_potential": 0,
+                    "job_matching": 0
                 })
             }
             for i, c in enumerate(ranking, 1)
@@ -444,7 +546,9 @@ class DimensionalScoringModel:
             "education": "教育背景",
             "experience": "工作经历",
             "skill_achievement": "技能与成果",
-            "comprehensive": "综合素质"
+            "comprehensive": "综合素质",
+            "growth_potential": "成长潜力",
+            "job_matching": "岗位匹配"
         }
 
         for dim, weight in weights.items():

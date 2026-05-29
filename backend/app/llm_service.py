@@ -24,7 +24,7 @@ class LLMService:
     def __init__(self, api_key: Optional[str] = None, model: Optional[str] = None):
         config = load_config()
         self.api_key = api_key or os.environ.get("DASHSCOPE_API_KEY", "") or config.get("api_key", "")
-        self.model = model or config.get("model", "qwen3.5-flash")
+        self.model = model or config.get("model", "qwen3.6-flash")
         self.base_url = "https://dashscope.aliyuncs.com/compatible-mode/v1"
         self.enabled = bool(self.api_key) and self.api_key != "your-api-key-here"
 
@@ -92,6 +92,8 @@ class LLMService:
 - 工作经历: {scores.get('experience', 'N/A')} (权重: {weights.get('experience', 0)*100:.0f}%)
 - 技能成果: {scores.get('skill_achievement', 'N/A')} (权重: {weights.get('skill_achievement', 0)*100:.0f}%)
 - 综合素质: {scores.get('comprehensive', 'N/A')} (权重: {weights.get('comprehensive', 0)*100:.0f}%)
+- 成长潜力: {scores.get('growth_potential', 'N/A')} (权重: {weights.get('growth_potential', 0)*100:.0f}%)
+- 岗位匹配: {scores.get('job_matching', 'N/A')} (权重: {weights.get('job_matching', 0)*100:.0f}%)
 
 跳槽风险: {'有' if candidate.get('penalty_applied') else '无'}
 
@@ -178,6 +180,8 @@ class LLMService:
 | 工作经历 | {fmt(scores.get('experience'))} | {fmt(weights.get('experience', 0)*100)}% |
 | 技能成果 | {fmt(scores.get('skill_achievement'))} | {fmt(weights.get('skill_achievement', 0)*100)}% |
 | 综合素质 | {fmt(scores.get('comprehensive'))} | {fmt(weights.get('comprehensive', 0)*100)}% |
+| 成长潜力 | {fmt(scores.get('growth_potential'))} | {fmt(weights.get('growth_potential', 0)*100)}% |
+| 岗位匹配 | {fmt(scores.get('job_matching'))} | {fmt(weights.get('job_matching', 0)*100)}% |
 
 ## 教育背景
 学校评级:
@@ -289,6 +293,8 @@ class LLMService:
 | 工作经历 | {fmt(scores.get('experience'))} | {fmt(weights.get('experience', 0)*100)}% |
 | 技能成果 | {fmt(scores.get('skill_achievement'))} | {fmt(weights.get('skill_achievement', 0)*100)}% |
 | 综合素质 | {fmt(scores.get('comprehensive'))} | {fmt(weights.get('comprehensive', 0)*100)}% |
+| 成长潜力 | {fmt(scores.get('growth_potential'))} | {fmt(weights.get('growth_potential', 0)*100)}% |
+| 岗位匹配 | {fmt(scores.get('job_matching'))} | {fmt(weights.get('job_matching', 0)*100)}% |
 
 跳槽风险: {'⚠️ 有' if candidate.get('penalty_applied') else '✅ 无'}"""
 
@@ -374,7 +380,7 @@ class LLMService:
             candidates_text += f"""
 ### 第{i}名: {name}
 - TCI综合评分: {fmt(c.get('tci_score', 0))} / 5.00
-- 教育背景: {fmt(scores.get('education'))} | 工作经历: {fmt(scores.get('experience'))} | 技能成果: {fmt(scores.get('skill_achievement'))} | 综合素质: {fmt(scores.get('comprehensive'))}
+- 教育背景: {fmt(scores.get('education'))} | 工作经历: {fmt(scores.get('experience'))} | 技能成果: {fmt(scores.get('skill_achievement'))} | 综合素质: {fmt(scores.get('comprehensive'))} | 成长潜力: {fmt(scores.get('growth_potential'))} | 岗位匹配: {fmt(scores.get('job_matching'))}
 - 跳槽风险: {penalty}"""
 
             entities = c.get("entities", {})

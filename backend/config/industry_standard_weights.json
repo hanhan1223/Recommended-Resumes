@@ -1,43 +1,56 @@
 {
   "description": "行业标准维度权重配置",
-  "version": "1.0",
-  "formula": "TCI = Wedu·Sedu + Wexp·Sexp + Wskill·Sskill + Wadj·Sadj",
+  "version": "2.0",
+  "formula": "D-TCI = Σ(Wi×Si) + 成长轨迹加分 + 潜力加分 + 风险惩罚项 + 岗位匹配修正项",
+  "dimensions": ["education", "experience", "skill_achievement", "comprehensive", "growth_potential", "job_matching"],
   "industries": {
     "电商": {
-      "education": 0.10,
-      "experience": 0.30,
-      "skill_achievement": 0.40,
-      "comprehensive": 0.20
+      "education": 0.08,
+      "experience": 0.25,
+      "skill_achievement": 0.32,
+      "comprehensive": 0.15,
+      "growth_potential": 0.10,
+      "job_matching": 0.10
     },
     "研发": {
-      "education": 0.20,
-      "experience": 0.30,
-      "skill_achievement": 0.40,
-      "comprehensive": 0.10
+      "education": 0.15,
+      "experience": 0.25,
+      "skill_achievement": 0.32,
+      "comprehensive": 0.08,
+      "growth_potential": 0.12,
+      "job_matching": 0.08
     },
     "销售": {
-      "education": 0.10,
-      "experience": 0.35,
-      "skill_achievement": 0.40,
-      "comprehensive": 0.15
+      "education": 0.08,
+      "experience": 0.28,
+      "skill_achievement": 0.32,
+      "comprehensive": 0.12,
+      "growth_potential": 0.08,
+      "job_matching": 0.12
     },
     "品牌": {
-      "education": 0.15,
-      "experience": 0.30,
-      "skill_achievement": 0.35,
-      "comprehensive": 0.20
+      "education": 0.12,
+      "experience": 0.25,
+      "skill_achievement": 0.28,
+      "comprehensive": 0.15,
+      "growth_potential": 0.10,
+      "job_matching": 0.10
     },
     "生产": {
-      "education": 0.15,
-      "experience": 0.35,
-      "skill_achievement": 0.35,
-      "comprehensive": 0.15
+      "education": 0.12,
+      "experience": 0.28,
+      "skill_achievement": 0.28,
+      "comprehensive": 0.12,
+      "growth_potential": 0.10,
+      "job_matching": 0.10
     },
     "人力资源": {
-      "education": 0.15,
-      "experience": 0.30,
-      "skill_achievement": 0.35,
-      "comprehensive": 0.20
+      "education": 0.12,
+      "experience": 0.25,
+      "skill_achievement": 0.28,
+      "comprehensive": 0.15,
+      "growth_potential": 0.10,
+      "job_matching": 0.10
     }
   }
 }

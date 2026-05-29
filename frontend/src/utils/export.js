@@ -52,7 +52,9 @@ export const exportUtils = {
       education: '教育背景',
       experience: '工作经历',
       skill_achievement: '技能成果',
-      comprehensive: '综合素质'
+      comprehensive: '综合素质',
+      growth_potential: '成长潜力',
+      job_matching: '岗位匹配'
     }
 
     let dimensionWeightsHTML = ''
@@ -147,7 +149,9 @@ export const exportUtils = {
       education: '教育背景',
       experience: '工作经历',
       skill_achievement: '技能成果',
-      comprehensive: '综合素质'
+      comprehensive: '综合素质',
+      growth_potential: '成长潜力',
+      job_matching: '岗位匹配'
     }
 
     const scores = candidate.dimensional_scores || {}

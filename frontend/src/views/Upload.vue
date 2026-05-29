@@ -5,7 +5,7 @@
         <el-card class="upload-card">
           <template #header>
             <div class="card-header">
-              <el-icon :size="24" color="#2E86AB"><UploadFilled /></el-icon>
+              <el-icon :size="24" color="var(--color-primary)"><UploadFilled /></el-icon>
               <span>简历上传</span>
             </div>
           </template>
@@ -146,7 +146,7 @@
         <el-card class="guide-card">
           <template #header>
             <div class="card-header">
-              <el-icon :size="24" color="#2E86AB"><InfoFilled /></el-icon>
+              <el-icon :size="24" color="var(--color-primary)"><InfoFilled /></el-icon>
               <span>上传指南</span>
             </div>
           </template>
@@ -343,7 +343,7 @@ onMounted(() => {
   align-items: center;
   gap: 10px;
   font-weight: 600;
-  font-size: 16px;
+  font-size: var(--font-size-lg);
 }
 
 .upload-area {
@@ -353,27 +353,27 @@ onMounted(() => {
 .upload-area :deep(.el-upload-dragger) {
   width: 100%;
   padding: 40px 20px;
-  border: 2px dashed #2E86AB;
-  border-radius: 12px;
-  background: #f8f9fa;
+  border: 2px dashed var(--color-primary);
+  border-radius: var(--radius-lg);
+  background: var(--color-bg-hover);
 }
 
 .upload-area :deep(.el-upload-dragger:hover) {
-  border-color: #4ECDC4;
-  background: #f0f7ff;
+  border-color: var(--color-accent);
+  background: var(--color-primary-bg);
 }
 
 .upload-options {
   margin-top: 20px;
   padding: 15px;
-  background: #f8f9fa;
-  border-radius: 8px;
+  background: var(--color-bg-hover);
+  border-radius: var(--radius-md);
 }
 
 .upload-options label {
   font-weight: 500;
   margin-right: 10px;
-  color: #666;
+  color: var(--color-text-secondary);
 }
 
 .upload-actions {
@@ -382,14 +382,14 @@ onMounted(() => {
 }
 
 .guide-content h4 {
-  color: #2E86AB;
+  color: var(--color-primary);
   margin: 20px 0 10px;
-  font-size: 15px;
+  font-size: var(--font-size-base);
 }
 
 .guide-content ul {
   padding-left: 20px;
-  color: #666;
+  color: var(--color-text-secondary);
   line-height: 1.8;
 }
 
@@ -398,7 +398,7 @@ onMounted(() => {
 }
 
 .result-card {
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   margin-top: 20px;
 }
 
@@ -424,7 +424,7 @@ onMounted(() => {
 
 .parsed-detail h4 {
   margin-bottom: 20px;
-  color: #2E86AB;
+  color: var(--color-primary);
 }
 
 .detail-actions {
