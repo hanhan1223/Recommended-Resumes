@@ -2546,8 +2546,8 @@ async def export_report(request: ExportReportRequest):
 async def get_available_candidates_for_comparison(industry: Optional[str] = None, include_all: bool = False):
     """
     获取可用于对比的候选人列表
-    从排名缓存获取TCI分数和排名数据
-    
+    从排名缓存获取TCI分数和排名数据，缓存未命中时自动触发评分计算
+
     Args:
         industry: 行业名称，如果不指定则返回所有行业
         include_all: 是否包含所有候选人（忽略行业筛选）
@@ -2557,51 +2557,63 @@ async def get_available_candidates_for_comparison(industry: Optional[str] = None
         data_manager = get_data_manager(project_root)
         all_resumes = data_manager.get_all_resumes()
         print(f"[DEBUG] 从data_manager加载到 {len(all_resumes)} 份简历")
-        
+
         # 获取所有行业的排名缓存
         cache = get_cache_manager()
-        
+
         # 构建完整的TCI映射（跨所有行业）
         tci_map = {}
         rank_map = {}
-        
+
         # 如果指定了行业，从该行业缓存获取TCI
         if industry and not include_all:
-            cached_ranking = cache.get("ranking", industry=industry, top_n=100)
-            if cached_ranking and 'ranking' in cached_ranking:
-                for item in cached_ranking['ranking']:
-                    candidate_id = item.get('candidate_id', '')
-                    tci_map[candidate_id] = item.get('tci_score', 0)
-                    rank_map[candidate_id] = item.get('rank', 0)
-        
+            # 尝试不同的 top_n 缓存键
+            for top_n in [100, 10, 50]:
+                cached_ranking = cache.get("ranking", industry=industry, top_n=top_n)
+                if cached_ranking and 'ranking' in cached_ranking:
+                    for item in cached_ranking['ranking']:
+                        candidate_id = item.get('candidate_id', '')
+                        tci_map[candidate_id] = item.get('tci_score', 0)
+                        rank_map[candidate_id] = item.get('rank', 0)
+                    break
+
         candidates = []
+        missing_industries = set()  # 记录缓存未命中的行业
+
         for resume in all_resumes:
             try:
                 basic_info = resume.get('basic_info', {})
                 name = basic_info.get('name', '') or resume.get('candidate_id', '')
                 resume_industry = resume.get('industry', '未知')
-                
+
                 if not name:
                     continue
-                
+
                 # 如果指定了行业且不是包含所有，则过滤
                 if industry and not include_all and resume_industry != industry:
                     continue
-                
+
                 # 如果没有在缓存中找到TCI，尝试从该行业缓存获取
                 tci_score = tci_map.get(name, 0)
                 rank = rank_map.get(name, 0)
-                
-                # 如果TCI为0，尝试从候选人所在行业的缓存获取
+
+                # 如果TCI为0，尝试从候选人所在行业的缓存获取（多种 top_n）
                 if tci_score == 0 and resume_industry:
-                    cached_ranking = cache.get("ranking", industry=resume_industry, top_n=100)
-                    if cached_ranking and 'ranking' in cached_ranking:
-                        for item in cached_ranking['ranking']:
-                            if item.get('candidate_id', '') == name:
-                                tci_score = item.get('tci_score', 0)
-                                rank = item.get('rank', 0)
+                    for top_n in [100, 10, 50]:
+                        cached_ranking = cache.get("ranking", industry=resume_industry, top_n=top_n)
+                        if cached_ranking and 'ranking' in cached_ranking:
+                            for item in cached_ranking['ranking']:
+                                if item.get('candidate_id', '') == name:
+                                    tci_score = item.get('tci_score', 0)
+                                    rank = item.get('rank', 0)
+                                    break
+                            if tci_score > 0:
                                 break
-                
+
+                # 如果仍然没有TCI，记录需要评分的行业
+                if tci_score == 0 and resume_industry and resume_industry != '未知':
+                    missing_industries.add(resume_industry)
+
                 candidates.append({
                     "id": name,
                     "name": name,
@@ -2612,23 +2624,53 @@ async def get_available_candidates_for_comparison(industry: Optional[str] = None
             except Exception as e:
                 print(f"[WARNING] 处理候选人数据失败: {e}")
                 continue
-        
+
+        # 如果有缓存未命中的行业，自动触发批量评分
+        if missing_industries:
+            print(f"[INFO] 以下行业缓存未命中，自动触发评分: {missing_industries}")
+            for ind in missing_industries:
+                try:
+                    request = BatchScoreRequest(
+                        resume_ids=[],
+                        job_type=ind,
+                        industry=ind
+                    )
+                    await score_batch_resumes(request)
+                    print(f"[INFO] 已自动完成 {ind} 行业评分")
+                except Exception as e:
+                    print(f"[WARNING] 自动评分 {ind} 行业失败: {e}")
+
+            # 重新从缓存读取TCI数据
+            if missing_industries:
+                for c in candidates:
+                    if c['tci_score'] == 0 and c['industry'] in missing_industries:
+                        for top_n in [100, 10, 50]:
+                            cached_ranking = cache.get("ranking", industry=c['industry'], top_n=top_n)
+                            if cached_ranking and 'ranking' in cached_ranking:
+                                for item in cached_ranking['ranking']:
+                                    if item.get('candidate_id', '') == c['name']:
+                                        c['tci_score'] = item.get('tci_score', 0)
+                                        c['rank'] = item.get('rank', 0)
+                                        break
+                                if c['tci_score'] > 0:
+                                    break
+
         # 按TCI分数排序
         candidates.sort(key=lambda x: x['tci_score'], reverse=True)
-        
+
         # 重新计算排名
         for idx, c in enumerate(candidates, 1):
             c['rank'] = idx
-        
+
         print(f"[DEBUG] 返回 {len(candidates)} 个候选人")
-        
+
         return {
             "status": "success",
             "count": len(candidates),
             "industry": industry if industry else "所有行业",
             "candidates": candidates
         }
-        
+
     except Exception as e:
         print(f"[ERROR] 获取候选人列表失败: {e}")
         import traceback

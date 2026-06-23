@@ -141,7 +141,7 @@
             </div>
             <div class="info-item">
               <label>当前排名：</label>
-              <span class="rank">第 {{ currentCandidate.rank }} 名</span>
+              <span class="rank">{{ currentCandidate.rank > 0 ? '第 ' + currentCandidate.rank + ' 名' : '-' }}</span>
             </div>
             <div class="info-item">
               <label>跳槽惩罚：</label>

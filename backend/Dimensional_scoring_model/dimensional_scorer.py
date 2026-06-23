@@ -326,11 +326,11 @@ class DimensionalScorer:
             return 1.0
 
         work_years = work_duration_months / 12.0 if work_duration_months > 0 else n_jobs * 2
-        recent_years = min(work_years, 5)
-        if recent_years < 1:
-            recent_years = 1
-
-        jobs_per_5years = job_changes / recent_years * 5
+        if work_years <= 5:
+            recent_years = max(work_years, 1)
+            jobs_per_5years = job_changes / recent_years * 5
+        else:
+            jobs_per_5years = job_changes / work_years * 5
 
         if jobs_per_5years > 3:
             return 0.9

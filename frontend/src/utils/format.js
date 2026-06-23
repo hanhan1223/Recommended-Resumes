@@ -36,7 +36,7 @@ export const formatPercentage = (value, decimals = 1) => {
  * @returns {string} 格式化后的排名字符串
  */
 export const formatRank = (rank) => {
-  if (rank === null || rank === undefined || rank === '') return '-'
+  if (rank === null || rank === undefined || rank === '' || rank <= 0) return '-'
   return '第 ' + rank + ' 名'
 }
 

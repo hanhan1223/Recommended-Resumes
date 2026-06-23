@@ -19,7 +19,7 @@
             </div>
             <div class="rank-info">
               <span class="rank-label">排名</span>
-              <span class="rank-value">#{{ rank }}</span>
+              <span class="rank-value">{{ rank > 0 ? '#' + rank : '-' }}</span>
             </div>
             <el-button type="danger" size="small" @click="handleExportPDF">
               <el-icon><Download /></el-icon>PDF
@@ -477,7 +477,7 @@ onMounted(async () => {
   if (found) {
     candidate.value = found
     const rankIndex = store.rankings.findIndex(r => r.candidate_id === candidateId)
-    rank.value = rankIndex + 1
+    rank.value = rankIndex >= 0 ? rankIndex + 1 : 0
 
     // 调用LLM分析
     analysisLoading.value = true

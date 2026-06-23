@@ -138,8 +138,14 @@ class RiskIdentifier:
         job_changes = max(0, n_jobs - 1)
 
         # 步骤5: 计算最近5年的跳槽次数
-        recent_years = min(work_years, 5)
-        jobs_per_5years = job_changes / max(recent_years, 1) * 5 if recent_years > 0 else 0
+        # 当工作年限<=5年时用实际年限，>5年时按比例折算到5年窗口
+        if work_years <= 5:
+            recent_years = max(work_years, 1)
+            jobs_per_5years = job_changes / recent_years * 5
+        else:
+            # 超过5年：用总跳槽次数按比例折算
+            jobs_per_5years = job_changes / work_years * 5
+        jobs_per_5years = round(jobs_per_5years, 1)
 
         # 步骤6: 计算平均任期（总时长 / 工作段数）
         if work_duration_months > 0:
@@ -147,6 +153,7 @@ class RiskIdentifier:
         else:
             # 基于时间范围计算
             avg_tenure_months = total_months / n_jobs if n_jobs > 0 else 0
+        avg_tenure_months = round(avg_tenure_months, 1)
 
         # 风险评估
         risk_level = "低"
@@ -739,7 +746,7 @@ class RiskIdentifier:
                 'level': job_hop_level,
                 'score': job_hop_score,
                 'tag': self.RISK_JOB_HOPPING,
-                'description': f"5 年内跳槽{job_hop_details['jobs_per_5years']:.1f}次，平均任期{job_hop_details['avg_tenure_months']:.1f}个月"
+                'description': f"共{job_hop_details['n_jobs']}段工作经历，跳槽频率{job_hop_details['jobs_per_5years']:.1f}次/5年，平均任期{job_hop_details['avg_tenure_months']:.0f}个月"
             })
             risk_tags.append(self.RISK_JOB_HOPPING)
 
